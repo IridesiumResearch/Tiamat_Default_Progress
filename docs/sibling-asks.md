@@ -50,30 +50,28 @@ its three asks back (P1 to P3) answered here the same day.
 
 ## Tiamat Default World
 
-### W5 and W6: BUILT, not yet committed in World (2026-09-28)
+### W5 and W6: ANSWERED 2026-09-28 (World 0e5db57)
 
-`biomes()`, `depth_under(x, y, z)` and `depth_band(x, y, z)` are in the
-world's working tree and its `docs/exports.md`. This mod uses the first two
-where they exist and falls back where they do not, so it is right before
-and after World commits:
+`biomes()`, `depth_under(x, y, z)` and `depth_band(x, y, z)`. This mod
+uses the first two, and falls back where a world lacks them:
 
 - **W5, the biome list:** a biome discovery carries the world's own name,
   and the Discoveries view lists every findable biome, found or not, "of"
   their number. Without it, names come from ids and the count from
   `C.biome_count`.
 - **W6, depth from the surface:** depth bands are counted by
-  `depth_under`, the ground as generated. Without it, down from
-  `C.depth_zero`.
+  `depth_under`, the ground as generated. Without it (or before the world
+  has a seed), down from `C.depth_zero`.
 
 ## Tiamat Default UI
 
-### U5. A tooltip on a button: LANDED IN THE ENGINE (2655837); one line in the UI
+### U5. A tooltip on a button: ANSWERED 2026-09-28 (engine 2655837, UI 998b384)
 
-A `tooltip` on any dialog node. Every node button here carries one — what
-the node does and what it needs — and the plain dialog shows it. The UI
-copies another mod's tree by a list of fields (`screen.lua`,
-`WIDGET_FIELDS`), which does not have `tooltip` yet, so on the Research
-tab it is dropped until the UI adds it (its engine ask 15 says it will).
+A `tooltip` on any dialog node (the engine), copied through from another
+mod's tab (the UI), and `ui.widgets.tip(widget, text)` for a widget built
+with the UI's own read-only builders. Every node button here carries one —
+what the node does and what it needs — on the Research tab and in the plain
+dialog alike. This mod builds its own widget tables, so it needs no `tip`.
 
 ### U4. `scroll` on a tab (2026-09-28): ANSWERED
 
