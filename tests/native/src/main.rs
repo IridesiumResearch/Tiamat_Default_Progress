@@ -126,20 +126,19 @@ fn insight_and_persistence() {
     println!("insight and persistence: ok");
 }
 
-/// Biomes and depths from where a player stands; firsts from Craft.
+/// Biomes and depths from where a player's feet arrive; firsts from Craft.
 fn discoveries() {
     let mut r = Rig::new(Setup { world: true, craft: true, ..Setup::default() });
     r.join(PLAYER);
-    r.place(PLAYER, 100.5, 64.0, 100.5);
-    r.tick(1);
+    r.tick(200);
+    assert!(r.heard(PLAYER).is_empty(), "nothing is polled: standing still, nobody has been anywhere");
+    r.moved(PLAYER, (100, 64, 100), None);
     assert_eq!(r.heard(PLAYER), vec!["Discovered: Temperate woodlands (+3 insight)"]);
-    r.tick(80);
+    r.moved(PLAYER, (101, 64, 100), Some((100, 64, 100)));
     assert!(r.heard(PLAYER).is_empty(), "once");
-    r.place(PLAYER, -50.5, 64.0, 100.5);
-    r.tick(40);
+    r.moved(PLAYER, (-51, 64, 100), Some((101, 64, 100)));
     assert_eq!(r.heard(PLAYER), vec!["Discovered: Taiga (+3 insight)"]);
-    r.place(PLAYER, -50.5, -250.0, 100.5);
-    r.tick(40);
+    r.moved(PLAYER, (-51, -250, 100), Some((-51, 64, 100)));
     assert_eq!(r.heard(PLAYER), vec!["Discovered: 60 blocks down (+5 insight)", "Discovered: 200 blocks down (+8 insight)"]);
 
     // Craft's firsts: the root of the tree comes with the first fire.
@@ -185,7 +184,7 @@ fn research() {
     assert_eq!(r.ask("c make tiamat_default_progress:study_copper"), "made");
     assert_eq!(r.ask("c make tiamat_default_progress:study_orichalcum"), "made");
     assert_eq!(r.ask("c make schism_magic:study_herb"), "made");
-    assert_eq!(r.ask("progress"), "Insight 96. Path: none yet. Nodes known: 0.", "and the woodland underfoot");
+    assert_eq!(r.ask("progress"), "Insight 93. Path: none yet. Nodes known: 0.");
     assert!(r.hud(PLAYER).contains("Study orichalcum") || r.hud(PLAYER).contains("Study herb"), "{}", r.hud(PLAYER));
 
     // Using the table says where the studies are.
@@ -200,7 +199,7 @@ fn research() {
     assert_eq!(r.units(PLAYER, "tiamat_default_world:stone"), 3, "one of the two was used");
     r.press(PLAYER, "research", "shape");
     assert!(r.last_dialog().unwrap().1.contains("you have studied that shape already"));
-    assert_eq!(r.ask("progress"), "Insight 104. Path: none yet. Nodes known: 0.");
+    assert_eq!(r.ask("progress"), "Insight 101. Path: none yet. Nodes known: 0.");
     println!("research: ok");
 }
 
@@ -223,6 +222,8 @@ fn unlocking() {
     assert_eq!(r.ask("m unlock shared.stonewright"), "true nil");
     assert_eq!(r.ask("m effects craft."), "craft.anvil_strikes=-1 craft.chisel_wear_percent=-50 craft.fireset_ticks=-200");
     assert_eq!(r.ask("m effects"), "craft.anvil_strikes=-1 craft.chisel_wear_percent=-50 craft.fireset_ticks=-200");
+    assert_eq!(r.ask("c effect craft.fireset_ticks"), "-200", "Craft reads them through set_effects");
+    assert_eq!(r.ask("c effect craft.mould_pours"), "0");
     r.say("progress insight 10");
     assert_eq!(r.ask("m unlock shared.hafting"), "nil Hafting needs 15 insight; you have 10");
     assert_eq!(r.ask("progress"), "Insight 10. Path: none yet. Nodes known: 3.", "nothing taken for a refusal");
@@ -380,6 +381,7 @@ fn shared_gates() {
         ("tiamat_default_craft:bronze_ingot", "shared.kiln_lore"),
         ("tiamat_default_craft:iron_bloom", "shared.bellows_craft"),
         ("tiamat_default_craft:iron_pick_head", "shared.tempering"),
+        ("tiamat_default_craft:first_iron_hammer_head", "shared.tempering"),
         ("tiamat_default_craft:stick", "nil"),
     ] {
         assert!(r.ask(&format!("c recipe {recipe}")).ends_with(&format!("requires {node}")), "{recipe}");
@@ -443,7 +445,8 @@ fn determinism() {
         for node in ["shared.fire_setting", "shared.charcoal_clamp", "shared.kiln_lore", "shared.roasting"] {
             r.say(&format!("m unlock {node}"));
         }
-        r.place(OTHER, 2000.0, -500.0, 0.0);
+        r.moved(OTHER, (2000, -500, 0), None);
+        r.moved(PLAYER, (-5, 10, 0), None);
         r.tick(200);
         r.say("progress grant shared.keystone");
         r.use_block(PLAYER, "schism_magic:attunement_stone");

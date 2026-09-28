@@ -100,7 +100,7 @@ if K.api then
         end
         if refused > 0 then
             game.log(string.format("tiamat_default_progress: Craft refused %d of %d studies (%s): "
-                .. "a study makes nothing, which Craft must accept (sibling ask C5)", refused, #C.studies, tostring(why)))
+                .. "a study is a recipe that makes nothing, which this Craft does not take", refused, #C.studies, tostring(why)))
         end
     end
 end

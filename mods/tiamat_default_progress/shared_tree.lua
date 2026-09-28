@@ -6,15 +6,16 @@
 -- **Shared nodes refine; they do not gate.** A player with no insight can
 -- smelt bronze; a player who researched smelts it better. That keeps Craft's
 -- loop whole and gives insight a use long before the Fork. What each node
--- does is its `effects` (config.lua), integer deltas Craft reads live
--- through `effects_of` when it performs a recipe, burns fuel or charges wear
--- (sibling ask C2). Two exceptions, both deliberate:
+-- does is its `effects` (config.lua), integer deltas Craft reads live —
+-- through the `effects_of` handed to it with `set_effects` (craft.lua) —
+-- when it performs a recipe, burns fuel or charges wear. Two exceptions,
+-- both deliberate:
 --
 -- - `shared.keystone` gates the Keystone recipe in every world, because the
 --   Keystone IS the Fork (fork.lua);
 -- - a world made with `shared_gates` on gates three families of Craft's own
 --   recipes behind kiln lore, bellows and tempering: a slower game, led by
---   research (sibling ask C1).
+--   research.
 
 local C = tdp.config
 local N = tdp.nodes
@@ -39,16 +40,10 @@ K.on_crafted(function(uuid, recipe_id)
 end)
 
 -- The shared gates, in a world that asked for them. Craft's own recipes are
--- registered by now (it loads first), so they can be read and gated here —
--- through `set_requires`, which Craft does not export yet (sibling ask C1).
--- Until it does, the option is logged as waiting and changes nothing.
+-- registered by now (it loads first), so they can be read and gated here,
+-- through its `set_requires`. A Craft without it gets a line in the log.
 local function gated(recipe, gate)
-    if gate.recipes then
-        for _, id in ipairs(gate.recipes) do
-            if id == recipe.id then return true end
-        end
-        return false
-    end
+    if gate.pattern and not string.find(recipe.id, gate.pattern) then return false end
     if gate.heat and recipe.heat ~= gate.heat then return false end
     if gate.station and recipe.station ~= gate.station then return false end
     return true
@@ -56,7 +51,7 @@ end
 
 if C.shared_gates and K.api then
     if type(K.api.set_requires) ~= "function" then
-        game.log("tiamat_default_progress: shared_gates is on, and waits on Craft's set_requires (sibling ask C1)")
+        game.log("tiamat_default_progress: shared_gates is on, and this Craft has no set_requires")
     else
         local prefix = C.craft .. ":"
         local n = 0

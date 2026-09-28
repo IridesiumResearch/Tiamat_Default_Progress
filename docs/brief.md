@@ -10,10 +10,12 @@
 > shape is studied from the hand, at once, since Craft never takes a carved
 > stack as an ingredient; the export that awards insight is `award` (the
 > earlier plan called it `grant_insight`); and the Craft side of the mod is
-> one file, `craft.lua`. Until Craft accepts a recipe that makes nothing
-> (sibling ask C5) its registry refuses the studies, and until it exports
-> `set_requires` (C1) the `shared_gates` option changes nothing. The
-> pacing bot of §10 and step 8 is not built yet. `docs/engine-asks.md` and
+> one file, `craft.lua`, which hands Craft `effects_of` through its
+> `set_effects` (Craft cannot read this mod's exports). `study_iron` studies
+> a bloom, since iron is never an ingot. §2's polling and `keys()` walk are
+> gone: engine asks 1 to 3 landed (engine cbbbc5e), so exploration hears
+> `register_on_player_move` and a record is read by prefix. The pacing bot
+> of §10 and step 8 is not built yet. `docs/engine-asks.md` and
 > `docs/sibling-asks.md` keep the current state.
 
 # Tiamat_default_progress — build prompt

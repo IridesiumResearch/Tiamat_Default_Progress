@@ -33,17 +33,18 @@ Built in the brief's order (§12):
 | 2 | Insight and the node graph: award, register, validate, `has`, `unlock`; operator words | **done** |
 | 3 | The shared tree, with its effects, and `effects_of` | **done** |
 | 4 | Exploration and discoveries; Craft's firsts | **done** |
-| 5 | The research table and the studies, through Craft's registry | **done** — the studies wait on Craft (sibling ask C5) |
+| 5 | The research table and the studies, through Craft's registry | **done** |
 | 6 | The Research tab (or dialog), discoveries, studies, the HUD | **done** |
 | 7 | The Fork: paths, the Keystone, doors, the lock, repath, modes (`0.1.0`) | **done** |
-| 8 | `shared_gates` wiring; the pacing bot and `docs/pacing.md` (`0.2.0`) | gates wired, waiting on Craft (C1); bot next |
+| 8 | `shared_gates` wiring; the pacing bot and `docs/pacing.md` (`0.2.0`) | gates **done**; the bot next |
 
-Today a player earns insight from the first time they stand in each of the
-world's biomes and reach each depth band, from Craft's firsts (their first
+Today a player earns insight from the first time their feet reach each of
+the world's biomes and each depth band, from Craft's firsts (their first
 fire, bronze, casting, workbench, worn-out tool…), and from studies at the
 research table. They spend it in the Research tab (the interface's screen,
 or G without it) on the shared tree: fire-setting, the charcoal clamp, kiln
-lore, roasting, bellows, tempering, the Keystone. The Keystone recipe opens
+lore, roasting, bellows, tempering, the Keystone — each of which Craft reads
+where its number is used: a fire cracks rock sooner, a mould lasts longer. The Keystone recipe opens
 only to a player who has learned it; a door made with it binds them to its
 path, and every node of the other path is refused them for ever — unless the
 world was made with `repath` on. Other mods register paths, nodes,
@@ -65,7 +66,7 @@ mods/tiamat_default_progress/
   shared_tree.lua   tiers 0 to 2, paybacks, the shared gates
   research.lua      the research table, the studies, shapes from the hand
   fork.lua          paths, the Keystone, the doors, the lock, repath
-  explore.lua       biomes and depths, one player a tick
+  explore.lua       biomes and depths, as a player's feet arrive
   screens.lua       the Research tab, or a dialog
   commands.lua      `progress`, and the operator's words
   exports.lua       what other mods may call

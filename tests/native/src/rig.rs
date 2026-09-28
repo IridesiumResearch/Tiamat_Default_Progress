@@ -31,7 +31,8 @@ use tiamat_core::{
     modload::WorldOptionValue,
     proto,
     script::{
-        ActionEvent, ChatEvent, DialogEvent, EngineVm, JoinEvent, LeaveEvent, ScriptVm, UseAim, UseEvent, VmLimits,
+        ActionEvent, ChatEvent, DialogEvent, EngineVm, JoinEvent, LeaveEvent, MoveEvent, ScriptVm, UseAim, UseEvent,
+        VmLimits,
         WorldEdit,
     },
     sight::{self, Looked, Reading, Sighting, Skip, Surface},
@@ -68,8 +69,14 @@ impl storage::Access for Storage {
             }
         }
     }
-    fn keys(&self, mod_id: &str) -> Vec<String> {
-        self.0.lock().unwrap().keys().filter(|(m, _)| m == mod_id).map(|(_, k)| k.clone()).collect()
+    fn keys(&self, mod_id: &str, prefix: &str) -> Vec<String> {
+        self.0
+            .lock()
+            .unwrap()
+            .keys()
+            .filter(|(m, k)| m == mod_id && k.starts_with(prefix))
+            .map(|(_, k)| k.clone())
+            .collect()
     }
 }
 
@@ -128,7 +135,8 @@ impl inventory::Access for Inventory {
     }
     /// The view is kept consolidated, so a named slot lands where any give
     /// would: nothing here reads slot positions in a player's view.
-    fn give(&self, player: [u8; 32], view: &str, _slot: Option<usize>, stack: Stack) -> bool {
+    /// Answers the units that did not go in: none, since the view grows.
+    fn give(&self, player: [u8; 32], view: &str, _slot: Option<usize>, stack: Stack) -> u32 {
         let mut views = self.views.lock().unwrap();
         let list = views.entry((player, view.to_owned())).or_default();
         if let Some(existing) = list.iter_mut().find(|s| same(s, stack.material, stack.shape, stack.detail.as_deref())) {
@@ -136,7 +144,11 @@ impl inventory::Access for Inventory {
         } else {
             list.push(stack);
         }
-        true
+        0
+    }
+    /// Slot positions are not kept, and nothing here reads one.
+    fn slot(&self, _: [u8; 32], _: &str, _: usize) -> Option<Stack> {
+        None
     }
     fn held(&self, player: [u8; 32]) -> Option<Stack> {
         let (material, detail) = self.held.lock().unwrap().get(&player).cloned()?;
@@ -631,19 +643,21 @@ game.export{
 "##;
 
 /// A stand-in for Craft's exports, as this mod uses them — including the
-/// two asked of it and not yet landed, `set_requires` (C1) and a recipe that
-/// makes nothing (C5). `c ...` in chat drives it: `c first <event>` is Craft
+/// two this mod asked of it, `set_requires` (C1) and a recipe that
+/// makes nothing (C5), both landed in Craft since, and `set_effects` (its
+/// ask P1 of this mod). `c effect <key>` reads an effect the way Craft does;
+/// the rest of `c ...` in chat drives it: `c first <event>` is Craft
 /// noticing a first, `c make <recipe>` making one through the gate, `c broke`
 /// a tool wearing out, `c recipe <id>` and `c stations` what was registered.
 pub const CRAFT: &str = r##"
 for _, id in ipairs({ "copper_ingot", "tin_ingot", "iron_ingot", "bronze_ingot", "iron_bar", "silver_ingot",
-    "gold_ingot", "lead_ingot", "plank", "cord", "iron_frame", "charcoal" }) do
+    "gold_ingot", "lead_ingot", "plank", "cord", "iron_frame", "charcoal", "iron_bloom" }) do
     game.register_item{ id = id }
 end
 local loading = true
 local stations = { workbench = { id = "workbench" }, hand = { id = "hand" } }
 local recipes, order, requires = {}, {}, {}
-local gate
+local gate, effects
 local subs = { first = {}, crafted = {}, broken = {} }
 local firsts = {}
 local function add(r) recipes[r.id] = r; order[#order + 1] = r.id end
@@ -651,6 +665,7 @@ local function add(r) recipes[r.id] = r; order[#order + 1] = r.id end
 add{ id = "tiamat_default_craft:bronze_ingot", station = "kiln", heat = 2 }
 add{ id = "tiamat_default_craft:iron_bloom", station = "bloomery", heat = 3 }
 add{ id = "tiamat_default_craft:iron_pick_head", station = "anvil", heat = 0 }
+add{ id = "tiamat_default_craft:first_iron_hammer_head", station = "anvil", heat = 0 }
 add{ id = "tiamat_default_craft:stick", station = "hand", heat = 0 }
 add{ id = "tiamat_default_craft:charcoal", station = "hand", heat = 0 }
 local function sub(list) return function(fn)
@@ -689,6 +704,11 @@ game.export{
         gate = fn
         return true
     end,
+    set_effects = function(fn)
+        if effects then return nil, "effects are already set" end
+        effects = fn
+        return true
+    end,
     set_requires = function(id, node)
         if not recipes[id] then return nil, "no recipe" end
         requires[id] = node
@@ -721,6 +741,9 @@ game.register_on_chat(function(e)
             first(e.player, "craft:" .. rest)
             game.chat_to(e.player, "made")
         end
+    elseif word == "effect" then
+        local fx = effects and effects(e.player, "craft.") or {}
+        game.chat_to(e.player, tostring(fx[rest] or 0))
     elseif word == "broke" then
         for _, fn in ipairs(subs.broken) do fn(e.player, "tiamat_default_craft:bronze_pick") end
     elseif word == "recipe" then
@@ -970,6 +993,20 @@ impl Rig {
         let id = if player == PLAYER { 1 } else { 2 };
         let mut map = self.entities.0.lock().unwrap();
         map.get_mut(&id).unwrap().transform = Transform::from_world(x, y, z);
+    }
+
+    /// The engine saying a player's feet crossed into the block at `x, y, z`,
+    /// from the one they were in before (none the first time).
+    pub fn moved(&mut self, player: [u8; 32], to: (i32, i32, i32), from: Option<(i32, i32, i32)>) {
+        let pos = |(x, y, z): (i32, i32, i32)| BlockPos { x, y, z };
+        let out = self.vm.player_move(&MoveEvent {
+            player,
+            domain: "overworld".into(),
+            block: pos(to),
+            from: from.map(pos),
+        });
+        assert!(out.faults.is_empty(), "faulted in a move: {:?}", out.faults);
+        self.assert_healthy("a move");
     }
 
     /// The player uses (the place control, nothing in hand) a block of

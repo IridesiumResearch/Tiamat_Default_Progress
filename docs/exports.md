@@ -139,6 +139,7 @@ Its HUD script is sent `insight` and, for a few seconds after an award,
 ## What it reads from other mods
 
 Not exports, listed so the direction is clear: Craft's recipe registry,
-gate and subscribers (`on_first`, `on_crafted`, `on_tool_broken`); the
+`set_requires`, gate and effects (this mod hands it `has` and
+`effects_of`), and subscribers (`on_first`, `on_crafted`, `on_tool_broken`); the
 world's `biome_under`; the interface's `add_tab`, `open`, `redraw` and
 theme colours; and Life's world option `mode`.

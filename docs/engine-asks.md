@@ -16,11 +16,13 @@ Numbered as the brief (`docs/brief.md` §11) numbered them.
 
 | Item | State | In this mod |
 |---|---|---|
-| 3 a position-change event | Open. | each player is looked at every 40 ticks, one a tick (`explore.lua`). |
-| 2 a per-player storage namespace, or a key ceiling | Open. | one key per fact, prefixed with the UUID (`store.lua`). |
-| 1 `keys(prefix)` | Open. | a player's record is built from a walk of every key, once per session (`store.lua`). |
+| 3 a position-change event | Landed, engine cbbbc5e. | `explore.lua` hears `register_on_player_move`; the round-robin poll is gone. |
+| 2 a per-player storage namespace, or a key ceiling | Landed, engine cbbbc5e. | one key per fact stays: the save now writes only the keys that changed. |
+| 1 `keys(prefix)` | Landed, engine cbbbc5e. | a player's record is four prefix reads (`store.lua`). |
 
-## 3. A position-change event (2026-09-28): OPEN
+Nothing is open.
+
+## 3. A position-change event: LANDED 2026-09-28 (engine cbbbc5e)
 
 **Wanted.** `game.register_on_player_move(fn(uuid, pos))`, fired when a
 player crosses into another block (or chunk), or any event that says a
@@ -34,7 +36,12 @@ engine calls and one export call a look, whether anybody moved or not.
 **Smallest change.** A hook fired on a block-coordinate change of a
 player's feet; the engine already knows when that happens.
 
-## 2. A per-player storage namespace, or a documented ceiling (2026-09-28): OPEN
+**Landed** as `game.register_on_player_move(fn(e))`, `e = { player, x, y,
+z, domain, from }`, once per block the feet cross into, after the body has
+moved; the first event after a join has no `from`. `explore.lua` discovers
+from it and polls nothing.
+
+## 2. A per-player storage namespace, or a documented ceiling: LANDED 2026-09-28 (engine cbbbc5e)
 
 **Wanted.** Either `game.storage` scoped to a player (`game.player_storage(uuid)`)
 or a stated limit on how many keys a mod may keep.
@@ -46,7 +53,11 @@ whether that is fine.
 
 **Smallest change.** A number in the stubs, or a namespace.
 
-## 1. `keys(prefix)` (2026-09-28): OPEN
+**Landed** as the ceiling removed: the save had rewritten a mod's whole
+bag whenever one key changed, and now writes only the keys that changed. A
+prefix is the namespace, read back with `keys(prefix)`.
+
+## 1. `keys(prefix)`: LANDED 2026-09-28 (engine cbbbc5e)
 
 **Wanted.** `game.storage.keys(prefix)`, answering only the keys that start
 with a prefix.
@@ -57,3 +68,6 @@ fifty players with a hundred nodes. The walk is paid once per player per
 session and the record is cached after, but it grows with the world.
 
 **Smallest change.** A prefix argument; storage is already keyed by string.
+
+**Landed** as `game.storage.keys(prefix)`, the keys under a prefix, in
+order. A player's record is built from four of them.

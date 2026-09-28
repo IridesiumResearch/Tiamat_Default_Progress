@@ -10,59 +10,31 @@ smallest change that would answer it. Newest first within each mod.
 
 ## Tiamat Default Craft
 
-### C5. A recipe that makes nothing (2026-09-28): OPEN, blocks research
+All five answered by Craft on 2026-09-28 (its `docs/sibling-asks.md`), and
+its three asks back (P1 to P3) answered here the same day.
 
-**Wanted.** `register` accepting `outputs = {}` for a recipe whose product is
-not a thing: a study at the research table, which makes insight, heard
-through `on_crafted`.
+### C1 to C5: ANSWERED 2026-09-28
 
-**Today.** Craft refuses it ("outputs is a list"), so every study is logged
-as refused and the research table takes nothing; insight comes from
-discoveries and milestones alone. The table itself, its station and its
-recipe are registered and work.
+- **C5, a recipe that makes nothing:** accepted; the thirteen studies
+  register, and a study made is heard in `on_crafted`.
+- **C4, the iron frame:** `tiamat_default_craft:iron_frame`, as asked.
+- **C3, the first events:** frozen in Craft's `docs/exports.md`. The names
+  `C.firsts` listens for are all among them: `smelt:bronze`, `fire:kiln`,
+  `bloom:iron`, `wash:gold`, `craft:tiamat_default_craft:stone_anvil`.
+- **C2, the effects:** read where each number is used, through a function
+  this mod hands Craft with `set_effects` (P1 below), under the keys this
+  mod's nodes already name.
+- **C1, gating from outside:** `set_requires(recipe_id, node)`, which
+  `shared_gates` now uses.
 
-**Smallest change.** Allow an empty `outputs` list (and skip the output
-step of `perform` for it). A `conserve` recipe could still refuse it.
+### Craft's asks of this mod: ANSWERED 2026-09-28
 
-### C4. The Keystone's iron frame (2026-09-28): OPEN
-
-**Wanted.** Craft step 10's `iron_frame` keeps that id: the Keystone is
-27 units of orichalcum, 9 gold ingots and one `tiamat_default_craft:iron_frame`.
-
-### C3. The first-event names, frozen (2026-09-28): OPEN
-
-**Wanted.** The `on_first` events this mod listens for (`config.lua`,
-`C.firsts`) listed and kept in Craft's `docs/exports.md`: `fire:lit`,
-`fireset:*`, `smelt:copper`, `smelt:tin`, `smelt:bronze`, `cast:*`,
-`fire:kiln`, and, when they land, `wash:tin`, `wash:gold`, `bloom:iron`,
-`forge:iron_bar`, `forge:*`, and the recipes `bloomery`, `stone_anvil`,
-`sluice` and `torch`. The first seven are in Craft's exports today.
-
-### C2. Reading the effects (2026-09-28): OPEN
-
-**Wanted.** Craft asks `effects_of(uuid, "craft.")` when it performs a
-recipe, burns fuel, pours a mould, washes gravel or charges wear, and adds
-each delta to its own number: `craft.fireset_ticks`, `craft.charcoal_yield`,
-`craft.fuel_percent`, `craft.sluice_gold_period`, `craft.mould_pours`,
-`craft.uses_percent.<wood|bronze|iron>`, `craft.smelt_ore_units`,
-`craft.bloom_ticks`, `craft.anvil_strikes`, `craft.chisel_wear_percent`.
-
-**Today.** The shared tree's nodes are bought, held and answered by
-`effects_of`; until Craft reads them they change nothing.
-
-**Smallest change.** One `effects_of` read at each of those places, with
-the missing export (Progress absent) read as no effects.
-
-### C1. Gating a recipe from outside (2026-09-28): OPEN
-
-**Wanted.** `set_requires(recipe_id, node)`, so a world made with
-`shared_gates` on can put kiln lore in front of every heat-2 recipe,
-bellows in front of the bloomery and tempering in front of the iron heads.
-
-**Today.** The option is logged as waiting and changes nothing.
-
-**Smallest change.** Set the recipe record's `requires` if it has none;
-the gate already answers it.
+- **P1, hand in `effects_of`:** `craft.lua` calls `set_effects` beside
+  `set_gate`.
+- **P2, `study_iron` named an ingot that does not exist:** it studies an
+  iron bloom; wrought iron is `study_wrought_iron`.
+- **P3, the charcoal clamp's sentence:** "A log gives a third more
+  charcoal", which is how Craft reads the node's 3.
 
 ## Tiamat Default Life
 

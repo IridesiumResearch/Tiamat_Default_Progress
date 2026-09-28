@@ -82,9 +82,7 @@ C.discoveries = {
 -- Craft's `on_first` events (its docs/exports.md), and the discovery each one
 -- is. A name ending in `*` matches any event that starts with what comes
 -- before it; an event may match more than one line (the first iron bar is
--- also the first forging). The washing, blooming and forging events, and the
--- last four stations, are the names Craft's brief gives them; its steps 7
--- and 8 will say for certain (sibling ask C3).
+-- also the first forging). Craft keeps these names frozen.
 C.firsts = {
     ["fire:lit"] = "make.fire",
     ["fireset:*"] = "make.fireset",
@@ -129,10 +127,6 @@ C.depths = {
     { blocks = 2000, insight = 30 },
 }
 
--- How often each player is looked at, in ticks. One player a tick at most,
--- round-robin, so fifty players cost fifty ticks a sweep rather than one.
-C.explore_every = 40
-
 -- Research (research.lua) -------------------------------------------------------
 
 -- The research table, as a Craft station: one input, one output that
@@ -145,7 +139,8 @@ C.studies = {
     { id = "study_rock", name = "Study rock", input = { "#rock", units = 27 }, ticks = 300, insight = 2 },
     { id = "study_copper", name = "Study copper", input = { "tiamat_default_craft:copper_ingot", count = 1 }, ticks = 600, insight = 10 },
     { id = "study_tin", name = "Study tin", input = { "tiamat_default_craft:tin_ingot", count = 1 }, ticks = 600, insight = 10 },
-    { id = "study_iron", name = "Study iron", input = { "tiamat_default_craft:iron_ingot", count = 1 }, ticks = 600, insight = 10 },
+    -- Iron is bloomed and wrought, never an ingot.
+    { id = "study_iron", name = "Study iron", input = { "tiamat_default_craft:iron_bloom", count = 1 }, ticks = 600, insight = 10 },
     { id = "study_bronze", name = "Study bronze", input = { "tiamat_default_craft:bronze_ingot", count = 1 }, ticks = 600, insight = 12 },
     { id = "study_wrought_iron", name = "Study wrought iron", input = { "tiamat_default_craft:iron_bar", count = 1 }, ticks = 900, insight = 20 },
     { id = "study_silver", name = "Study silver", input = { "tiamat_default_craft:silver_ingot", count = 1 }, ticks = 1200, insight = 25 },
@@ -176,7 +171,7 @@ C.shared = {
       text = "A fire against rock cracks it in 400 ticks rather than 600.",
       effects = { { "craft.fireset_ticks", -200 } } },
     { id = "shared.charcoal_clamp", tier = 1, cost = 15, requires = { "shared.firecraft" }, label = "Charcoal clamp",
-      text = "A clamp of 27 logs yields 12 charcoal, not 9.",
+      text = "A log gives a third more charcoal.",
       effects = { { "craft.charcoal_yield", 3 } } },
     { id = "shared.kiln_lore", tier = 1, cost = 20, requires = { "shared.charcoal_clamp" }, label = "Kiln lore",
       text = "Fuel in a kiln lasts a quarter as long again.",
@@ -218,16 +213,13 @@ C.paybacks = {
     { node = "shared.charcoal_clamp", recipe = "tiamat_default_craft:charcoal", insight = 5 },
 }
 
--- With `shared_gates` on, these Craft recipes need their node first. Craft's
--- own recipes, gated from here (sibling ask C1).
+-- With `shared_gates` on, these Craft recipes need their node first: Craft's
+-- own, gated from here through its `set_requires`. A gate names a heat, a
+-- station, or a Lua pattern the recipe id must match.
 C.gates = {
     { node = "shared.kiln_lore", heat = 2 },
     { node = "shared.bellows_craft", station = "bloomery" },
-    { node = "shared.tempering", recipes = {
-        "tiamat_default_craft:iron_pick_head", "tiamat_default_craft:iron_axe_head",
-        "tiamat_default_craft:iron_spade_head", "tiamat_default_craft:iron_chisel_head",
-        "tiamat_default_craft:iron_hammer_head",
-    } },
+    { node = "shared.tempering", pattern = "iron_[%w_]*head$" },
 }
 
 -- The Fork (fork.lua) ----------------------------------------------------------

@@ -15,10 +15,12 @@
 --     clock              ticks the world has run, written now and then
 --
 -- Every read other mods make — `has` above all, which a gated recipe asks on
--- the tick — is answered from a cache, one table per player, built from a
--- scan of `keys()` the first time that player is asked about and written
--- through on every change. `keys()` lists every key in the world, so the
--- scan is paid once per player per session (engine ask 1).
+-- the tick — is answered from a cache, one table per player, built the first
+-- time that player is asked about and written through on every change. It
+-- is built from four prefix reads, `keys("n:<uuid>:")` and the rest, so a
+-- player's record costs their own keys and nobody else's (engine ask 1,
+-- landed). The engine saves only the keys that changed (ask 2, landed), so
+-- one key per fact costs what it touches.
 
 local S = {}
 
@@ -46,11 +48,10 @@ local function load(uuid)
     local path = game.storage.get("p:" .. uuid .. ":path")
     record.path = (type(path) == "string" and path ~= "") and path or nil
     record.forked = int(game.storage.get("p:" .. uuid .. ":forked"))
-    local tail = ":" .. uuid .. ":"
-    for _, key in ipairs(game.storage.keys()) do
-        local family = FAMILIES[string.sub(key, 1, 1)]
-        if family and string.sub(key, 2, 1 + #tail) == tail then
-            local name = string.sub(key, 2 + #tail)
+    for letter, family in pairs(FAMILIES) do
+        local prefix = letter .. ":" .. uuid .. ":"
+        for _, key in ipairs(game.storage.keys(prefix)) do
+            local name = string.sub(key, #prefix + 1)
             if name ~= "" and game.storage.get(key) == true then
                 record[family][name] = true
             end

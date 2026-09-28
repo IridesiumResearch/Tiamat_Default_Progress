@@ -65,6 +65,16 @@ if K.api then
         game.log("tiamat_default_progress: could not answer Craft's gate: " .. tostring(why))
     end
 
+    -- The shared tree's effects, read by Craft where each number is used.
+    -- Craft cannot read this mod's exports (it loads first), so it is handed
+    -- the function, as it is handed the gate (Craft's ask P1).
+    if type(K.api.set_effects) == "function" then
+        ok, why = K.api.set_effects(function(uuid, prefix) return N.effects_of(uuid, prefix) end)
+        if not ok then
+            game.log("tiamat_default_progress: could not hand Craft the effects: " .. tostring(why))
+        end
+    end
+
     K.api.on_first(function(uuid, event)
         if type(event) ~= "string" then return end
         if event == C.root_event then N.grant(uuid, C.root) end

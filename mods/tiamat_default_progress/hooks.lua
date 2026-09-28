@@ -13,6 +13,7 @@ local words = {}
 local actions = {}
 local joins = {}
 local leaves = {}
+local moves = {}
 local dialogs = {}
 local uses = {}
 
@@ -76,6 +77,12 @@ function tdp.on_leave(fn)
     leaves[#leaves + 1] = fn
 end
 
+--- Runs `fn(event)` when a player's feet cross into another block:
+--- `{ player, x, y, z, domain, from? }`.
+function tdp.on_move(fn)
+    moves[#moves + 1] = fn
+end
+
 --- Runs `fn(event)` for events from the dialog this mod showed as `form`
 --- (unqualified; the engine reports it qualified).
 function tdp.on_dialog(form, fn)
@@ -124,6 +131,13 @@ end)
 
 game.register_on_player_leave(function(event)
     for _, fn in ipairs(leaves) do
+        fn(event)
+    end
+end)
+
+game.register_on_player_move(function(event)
+    start()
+    for _, fn in ipairs(moves) do
         fn(event)
     end
 end)
