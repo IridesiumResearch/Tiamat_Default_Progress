@@ -63,13 +63,26 @@ tdp.on_leave(function(event) flashes[event.player] = nil end)
 
 --- Changes a player's insight by `amount` (negative to spend), clamped to
 --- 0..max. Answers the new total. `reason`, when given, goes on the HUD.
-function I.award(uuid, amount, reason)
+---
+--- `source` is what paid, a word — `found_biomes`, `study`, `spent` — and
+--- what actually moved is added to the player's ledger under it (`t:` keys)
+--- and, with `pacing_log` on, written to the server's log. That ledger is
+--- the pacing measurement: any real session, a person's or a bot's, says
+--- how much each source paid and when (`progress sources`).
+function I.award(uuid, amount, reason, source)
     local record = S.record(uuid)
-    local total = record.insight + amount
+    local before = record.insight
+    local total = before + amount
     if total < 0 then total = 0 end
     if total > C.max_insight then total = C.max_insight end
-    if total ~= record.insight then
+    if total ~= before then
         S.set_insight(uuid, total)
+        source = type(source) == "string" and string.gsub(source, "[^%w_]", "_") or "other"
+        S.add_tally(uuid, source, total - before)
+        if C.pacing_log then
+            game.log(string.format("tiamat_default_progress: pacing t=%d player=%s source=%s delta=%d total=%d",
+                S.now(), string.sub(uuid, 1, 12), source, total - before, total))
+        end
     end
     if reason and amount > 0 then
         I.flash(uuid, string.format("+%d  %s", amount, reason))
@@ -141,7 +154,7 @@ function I.discover(uuid, id)
     if record.found[id] then return false end
     S.set_found(uuid, id)
     if def.insight > 0 then
-        I.award(uuid, def.insight, def.label)
+        I.award(uuid, def.insight, def.label, "found_" .. def.group)
         game.chat_to(uuid, string.format("Discovered: %s (+%d insight)", def.label, def.insight))
     else
         game.chat_to(uuid, "Discovered: " .. def.label)

@@ -36,7 +36,7 @@ Built in the brief's order (§12):
 | 5 | The research table and the studies, through Craft's registry | **done** |
 | 6 | The Research tab (or dialog), discoveries, studies, the HUD | **done** |
 | 7 | The Fork: paths, the Keystone, doors, the lock, repath, modes (`0.1.0`) | **done** |
-| 8 | `shared_gates` wiring; the pacing bot and `docs/pacing.md` (`0.2.0`) | gates **done**; the bot next |
+| 8 | `shared_gates` wiring; the pacing bot and `docs/pacing.md` (`0.2.0`) | gates, the pacing ledger and model **done**; the bot waits on engine ask 4, the tuning on a real session |
 
 Today a player earns insight from the first time their feet reach each of
 the world's biomes and each depth band under the ground, from Craft's firsts (their first
@@ -74,8 +74,8 @@ mods/tiamat_default_progress/
   exports.lua       what other mods may call
   hud.lua           the client's HUD script: insight, and what just earned some
   textures/         placeholders, drawn by tools/make_textures.py
-tests/native/       the mod in the engine's real VM, with stand-ins around it
-docs/               the brief, the exports, and the asks of the engine and the siblings
+tests/native/       the mod in the engine's real VM, with stand-ins around it; the pacing model
+docs/               the brief, the exports, the pacing, and the asks of the engine and the siblings
 ```
 
 ## Try it
@@ -84,6 +84,13 @@ Check it without starting a server, from the engine checkout:
 
 ```sh
 cargo run -p server -- --check-mods <a directory holding this mod and its siblings>
+```
+
+The pacing model — one player's first three hours, played through the mod
+— rewrites the tables in `docs/pacing.md`:
+
+```sh
+cargo run --manifest-path tests/native/Cargo.toml --bin pacing
 ```
 
 The native check runs the mod through the engine's real VM with a fake
@@ -95,8 +102,9 @@ repository as `../Tiamat`:
 cargo run --manifest-path tests/native/Cargo.toml
 ```
 
-In a world: `progress` in chat says where you stand; G (or the interface's
-Research tab) shows the tree. Operators have `progress grant <node>`,
+In a world: `progress` in chat says where you stand, and `progress sources`
+where your insight came from; G (or the interface's Research tab) shows the
+tree. Operators have `progress grant <node>`,
 `progress insight <n>`, `progress path <id|none>` and `progress reset`.
 
 ## Your editor

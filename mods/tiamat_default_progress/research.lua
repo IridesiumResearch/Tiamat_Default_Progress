@@ -108,18 +108,15 @@ end
 K.on_crafted(function(uuid, recipe_id)
     local study = studies[recipe_id]
     if study then
-        I.award(uuid, study.insight, study.name)
+        I.award(uuid, study.insight, study.name, "study")
     end
 end)
 
--- Using the table with nothing to place, when Craft did not answer first:
--- Craft's stations open their own dialogs (its step 4); until they do, the
--- table says where the studies are.
+-- Using the table: Craft opens it, as it opens every station's block. In a
+-- world without Craft, the table says why it does nothing.
 tdp.on_use(function(event)
-    if event.material ~= R.block then return end
-    local line = K.api and "Put a material in the research table to study it. (Craft's stations are still to come.)"
-        or "A research table wants Craft's stations, and Craft is not in this world."
-    game.chat_to(event.player, line)
+    if K.api or event.material ~= R.block then return end
+    game.chat_to(event.player, "A research table wants Craft's stations, and Craft is not in this world.")
     return ""
 end)
 
@@ -140,7 +137,7 @@ function R.study_shape(uuid)
     local took = game.take(uuid, { material = held.material, count = 1, shape = mask, detail = held.detail })
     if took <= 0 then return nil, "the carving moved" end
     S.set_shape(uuid, key)
-    I.award(uuid, C.shape_insight, "A shape of " .. U.cells(mask) .. " cells")
+    I.award(uuid, C.shape_insight, "A shape of " .. U.cells(mask) .. " cells", "shape")
     return true, C.shape_insight
 end
 

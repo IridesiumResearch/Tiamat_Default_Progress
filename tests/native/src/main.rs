@@ -65,6 +65,11 @@ fn load_alone() {
     r.press(PLAYER, "research", "view:studies");
     assert!(r.last_dialog().unwrap().1.contains("There is no research table without Craft."));
 
+    // Without Craft, the research table says why it does nothing.
+    assert!(r.use_block(PLAYER, "research_table"));
+    assert_eq!(r.said(), "A research table wants Craft's stations, and Craft is not in this world.");
+    assert_eq!(r.ask("progress sources"), "No insight yet.");
+
     // The operator's words are the operator's.
     assert_eq!(r.ask("progress insight 40"), "progress insight is for operators");
     op(&r, PLAYER);
@@ -192,9 +197,9 @@ fn research() {
     assert_eq!(r.ask("progress"), "Insight 93. Path: none yet. Nodes known: 0.");
     assert!(r.hud(PLAYER).contains("Study orichalcum") || r.hud(PLAYER).contains("Study herb"), "{}", r.hud(PLAYER));
 
-    // Using the table says where the studies are.
-    assert!(r.use_block(PLAYER, "research_table"));
-    assert!(r.said().starts_with("Put a material in the research table"));
+    // The table is Craft's to open, as every station is.
+    assert!(!r.use_block(PLAYER, "research_table"), "left to Craft");
+    assert_eq!(r.ask("progress sources"), "Insight by source: study +93.");
 
     // A carved shape, from the hand: once per mask.
     r.hold_shape(PLAYER, "tiamat_default_world:stone", 0b111, 2);
@@ -205,6 +210,7 @@ fn research() {
     r.press(PLAYER, "research", "shape");
     assert!(r.last_dialog().unwrap().1.contains("you have studied that shape already"));
     assert_eq!(r.ask("progress"), "Insight 101. Path: none yet. Nodes known: 0.");
+    assert_eq!(r.ask("progress sources"), "Insight by source: shape +8, study +93.");
     println!("research: ok");
 }
 
@@ -244,6 +250,11 @@ fn unlocking() {
     r.say("c make tiamat_default_craft:charcoal");
     r.say("c make tiamat_default_craft:charcoal");
     assert_eq!(r.ask("progress"), "Insight 5. Path: none yet. Nodes known: 4.", "paid once");
+    assert_eq!(
+        r.ask("progress sources"),
+        "Insight by source: found_making +5, operator +60, payback +5, spent -65.",
+        "the ledger: what paid, what was spent, and the operator's hand"
+    );
     println!("unlocking: ok");
 }
 

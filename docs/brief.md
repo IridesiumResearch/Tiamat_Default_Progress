@@ -14,8 +14,11 @@
 > `set_effects` (Craft cannot read this mod's exports). `study_iron` studies
 > a bloom, since iron is never an ingot. §2's polling and `keys()` walk are
 > gone: engine asks 1 to 3 landed (engine cbbbc5e), so exploration hears
-> `register_on_player_move` and a record is read by prefix. The pacing bot
-> of §10 and step 8 is not built yet. `docs/engine-asks.md` and
+> `register_on_player_move` and a record is read by prefix. The pacing
+> bot of §10 cannot play a station yet (engine ask 4): step 8 is a
+> per-source insight ledger any real session fills, and a model of the
+> first three hours (`docs/pacing.md`), with `config.lua` left as designed
+> until a real session is measured. `docs/engine-asks.md` and
 > `docs/sibling-asks.md` keep the current state.
 
 # Tiamat_default_progress — build prompt

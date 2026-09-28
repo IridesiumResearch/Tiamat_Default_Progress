@@ -34,7 +34,7 @@ K.on_crafted(function(uuid, recipe_id)
         if recipe_id == payback.recipe and N.has(uuid, payback.node) and not S.record(uuid).paid[payback.node] then
             S.set_paid(uuid, payback.node)
             local node = N.node(payback.node)
-            I.award(uuid, payback.insight, node and node.label or payback.node)
+            I.award(uuid, payback.insight, node and node.label or payback.node, "payback")
         end
     end
 end)

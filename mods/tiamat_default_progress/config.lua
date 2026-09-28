@@ -260,6 +260,11 @@ C.research_key = "KeyG"
 C.tab_order = 40
 C.flash_ticks = 60     -- how long a discovery's name stays on the HUD
 
+-- Every change to a player's insight as one line in the server's log, with
+-- the clock, the source and the amount: a playtest's pacing, read from the
+-- log (docs/pacing.md says how).
+C.pacing_log = true
+
 -- How often the world's clock is written to storage, in ticks.
 C.clock_every = 100
 

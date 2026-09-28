@@ -173,7 +173,7 @@ function F.repath(uuid, id)
         end
     end
     local keep = record.insight * C.repath_keep[1] // C.repath_keep[2]
-    I.award(uuid, keep - record.insight)
+    I.award(uuid, keep - record.insight, nil, "repath")
     S.set_path(uuid, id)
     S.set_forked(uuid, S.now())
     local path = F.paths[id]

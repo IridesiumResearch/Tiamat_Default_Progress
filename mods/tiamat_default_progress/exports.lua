@@ -91,7 +91,7 @@ return {
         local n = U.whole(amount, -1000000, 1000000)
         if not n then return nil, "an amount is a whole number" end
         if reason ~= nil and type(reason) ~= "string" then return nil, "a reason is a string" end
-        return I.award(uuid, n, reason and string.sub(reason, 1, 48))
+        return I.award(uuid, n, reason and string.sub(reason, 1, 48), "milestone")
     end),
 
     --- `{ id, insight, label?, group? }`, while mods load. An id ending in

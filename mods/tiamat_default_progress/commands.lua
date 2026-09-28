@@ -1,9 +1,10 @@
 -- SPDX-FileCopyrightText: Iridesium
 -- SPDX-License-Identifier: GPL-3.0-only
 --
--- Chat words. `progress` alone, for anyone, says where a player stands. Its
--- subcommands are for operators — testing, and an admin putting a shared
--- world right:
+-- Chat words. `progress` alone, for anyone, says where a player stands, and
+-- `progress sources` where their insight came from and went (the pacing
+-- ledger, docs/pacing.md). The other subcommands are for operators —
+-- testing, and an admin putting a shared world right:
 --
 --     progress grant <node>     give a node, without cost or prerequisites
 --     progress insight <n>      set insight to n
@@ -31,10 +32,25 @@ local function summary(uuid)
     return string.format("Insight %d. Path: %s. Nodes known: %d.", record.insight, path, known)
 end
 
+--- Where a player's insight has come from, and gone: the pacing ledger.
+local function sources(uuid)
+    local tally = S.record(uuid).tally
+    local parts = {}
+    for _, source in ipairs(U.sorted_keys(tally)) do
+        parts[#parts + 1] = string.format("%s %+d", source, tally[source])
+    end
+    if #parts == 0 then return "No insight yet." end
+    return "Insight by source: " .. table.concat(parts, ", ") .. "."
+end
+
 local function command(player, rest)
     local word, arg = string.match(rest, "^(%S*)%s*(.-)%s*$")
     if word == "" then
         game.chat_to(player, summary(player))
+        return
+    end
+    if word == "sources" then
+        game.chat_to(player, sources(player))
         return
     end
     -- A sentence that only starts with the word is chat.
@@ -60,7 +76,7 @@ local function command(player, rest)
             game.chat_to(player, "progress insight <whole number>")
             return
         end
-        I.award(player, n - S.record(player).insight)
+        I.award(player, n - S.record(player).insight, nil, "operator")
         game.chat_to(player, "insight " .. S.record(player).insight)
     elseif word == "path" then
         if arg == "none" then

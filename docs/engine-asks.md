@@ -16,11 +16,32 @@ Numbered as the brief (`docs/brief.md` §11) numbered them.
 
 | Item | State | In this mod |
 |---|---|---|
+| 4 a bot that can play a station | Open. | the pacing is a model and a ledger a person's session fills (`docs/pacing.md`). |
 | 3 a position-change event | Landed, engine cbbbc5e. | `explore.lua` hears `register_on_player_move`; the round-robin poll is gone. |
 | 2 a per-player storage namespace, or a key ceiling | Landed, engine cbbbc5e. | one key per fact stays: the save now writes only the keys that changed. |
 | 1 `keys(prefix)` | Landed, engine cbbbc5e. | a player's record is four prefix reads (`store.lua`). |
 
-Nothing is open.
+One is open.
+
+## 4. A bot that can play a station (2026-09-28): OPEN
+
+**Wanted.** Three calls on the `bot` script API: `bot.use(x, y, z)` (the
+place control on a block with nothing to place, as a player's right-click
+reaches `register_on_use`), `bot.press(form, name)` (a button in a dialog
+a mod showed it), and `bot.heard()` (the chat lines sent to it since the
+last call, so a script can read what a mod said back).
+
+**Why the mod cannot.** The brief's pacing is to be measured by a bot
+playing Craft's loop without a screen. The bot can join, chat, move, dig,
+place and press action keys, and nothing more: it cannot light a fire,
+open a kiln or read "Discovered: ..." back, so it cannot play the loop or
+see what it earned. Today the pacing is a model (`docs/pacing.md`) and a
+ledger a person's session fills; with these three, a script could play the
+first hours and read `progress sources` at the end.
+
+**Smallest change.** Three commands on the bot's existing channel: a use
+message the client already sends, a dialog event it already sends, and a
+queue of the chat it already receives.
 
 ## 3. A position-change event: LANDED 2026-09-28 (engine cbbbc5e)
 

@@ -125,7 +125,8 @@ All are namespaced `tiamat_default_progress:` by the engine.
 ## Commands it accepts
 
 Chat words, said by a player and swallowed. `progress` (or `/progress`),
-for anyone: insight, path and nodes known. For operators: `progress grant
+for anyone: insight, path and nodes known; `progress sources`, for anyone:
+where their insight came from and went, per source. For operators: `progress grant
 <node>`, `progress insight <n>`, `progress path <id|none>`, `progress reset`.
 A sentence that only begins with the word is chat.
 
@@ -133,8 +134,15 @@ A sentence that only begins with the word is chat.
 
 None for other mods. `game.storage` is private to this mod: per player,
 `p:<uuid>:insight`, `p:<uuid>:path`, `p:<uuid>:forked`, `n:<uuid>:<node>`,
-`d:<uuid>:<discovery>`, `s:<uuid>:<mask>` (studied shapes) and
-`m:<uuid>:<node>` (paybacks paid); and `clock`, the ticks the world has run.
+`d:<uuid>:<discovery>`, `s:<uuid>:<mask>` (studied shapes),
+`m:<uuid>:<node>` (paybacks paid) and `t:<uuid>:<source>` (insight moved by
+each source, signed: the pacing ledger); and `clock`, the ticks the world
+has run. With `pacing_log` on (the default) every change to a player's
+insight is also one line in the server's log:
+`tiamat_default_progress: pacing t=<tick> player=<first 12 hex> source=<source> delta=<n> total=<n>`.
+The sources are `found_<group>` (a discovery), `study`, `shape`,
+`payback`, `milestone` (another mod's `award`), `spent`, `repath` and
+`operator`.
 Its HUD script is sent `insight` and, for a few seconds after an award,
 `flash`.
 

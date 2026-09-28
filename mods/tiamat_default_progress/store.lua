@@ -12,6 +12,8 @@
 --     d:<uuid>:<disc>    true when discovered
 --     s:<uuid>:<mask>    true when a carved shape has been studied
 --     m:<uuid>:<node>    true when a node's payback has been paid
+--     t:<uuid>:<source>  insight earned from a source, for ever (the pacing
+--                        ledger: what paid, measured in real play)
 --     clock              ticks the world has run, written now and then
 --
 -- Every read other mods make — `has` above all, which a gated recipe asks on
@@ -38,7 +40,7 @@ local function int(value)
 end
 
 local function blank()
-    return { insight = 0, path = nil, forked = nil, nodes = {}, found = {}, shapes = {}, paid = {} }
+    return { insight = 0, path = nil, forked = nil, nodes = {}, found = {}, shapes = {}, paid = {}, tally = {} }
 end
 
 --- Builds a player's record from storage.
@@ -48,6 +50,11 @@ local function load(uuid)
     local path = game.storage.get("p:" .. uuid .. ":path")
     record.path = (type(path) == "string" and path ~= "") and path or nil
     record.forked = int(game.storage.get("p:" .. uuid .. ":forked"))
+    local tally = "t:" .. uuid .. ":"
+    for _, key in ipairs(game.storage.keys(tally)) do
+        local n = int(game.storage.get(key))
+        if n then record.tally[string.sub(key, #tally + 1)] = n end
+    end
     for letter, family in pairs(FAMILIES) do
         local prefix = letter .. ":" .. uuid .. ":"
         for _, key in ipairs(game.storage.keys(prefix)) do
@@ -104,9 +111,20 @@ S.set_found = flag("d", "found")
 S.set_shape = flag("s", "shapes")
 S.set_paid = flag("m", "paid")
 
+--- Adds `n` to what a player has had from `source`.
+function S.add_tally(uuid, source, n)
+    local record = S.record(uuid)
+    local total = (record.tally[source] or 0) + n
+    record.tally[source] = total
+    game.storage.set("t:" .. uuid .. ":" .. source, total)
+end
+
 --- Wipes a player's whole record.
 function S.reset(uuid)
     local record = S.record(uuid)
+    for source in pairs(record.tally) do
+        game.storage.set("t:" .. uuid .. ":" .. source, nil)
+    end
     for letter, family in pairs(FAMILIES) do
         for name in pairs(record[family]) do
             game.storage.set(letter .. ":" .. uuid .. ":" .. name, nil)

@@ -280,7 +280,7 @@ function N.unlock(uuid, id)
     local ok, why = N.can(uuid, id)
     if not ok then return nil, why end
     local node = nodes[id]
-    I.award(uuid, -node.cost)
+    I.award(uuid, -node.cost, nil, "spent")
     return N.grant(uuid, id)
 end
 
