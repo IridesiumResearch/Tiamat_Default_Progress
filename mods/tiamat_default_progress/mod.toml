@@ -1,17 +1,43 @@
-# Tiamat Default Progress: a Tiamat mod, started from the engine's template.
+# Tiamat Default Progress — the climb: insight, research, the shared tree
+# and the Fork.
 #
-# `id` is the namespace of everything this mod registers: `beacon` in init.lua
-# is `tiamat_default_progress:beacon` to every other mod. Lowercase letters, digits and
-# underscores, starting with a letter.
+# One integer per player, insight, earned by doing new things and by
+# studying materials at a research table; a node graph it is spent on; and
+# the Fork, where a player binds themselves to one of two doors. The doors
+# are not here: the magic and tech mods register themselves as paths, and
+# until one does the Fork is a room the player can see into.
 id = "tiamat_default_progress"
 name = "Tiamat Default Progress"
 version = "0.1.0"
-description = "A tour of the mod API: a block, a tool, a sound, an action, a dialog, an entity."
-# An SPDX licence identifier, yours to choose. The engine's scripting API is
-# MIT and its licence exception says a mod is not a derivative work of the
-# engine, so any terms are open to you.
+depends = ["core >=0.1"]
+# Loaded AFTER each of these when it is here, which is what the optional edge
+# buys, so `game.exports` finds them from the first line of init.lua:
+#
+# - The world, whose `biome_under` names the biomes a player discovers.
+# - The interface, whose screen the Research tab sits on.
+# - Life, whose world option `mode` says whether this is a Creative world.
+# - Craft, whose recipe registry the research table, the studies and the
+#   Keystone go into, whose gate this mod answers, and whose `on_first`
+#   tells it what a player made first.
+#
+# Optional, so the mod still loads on a bare engine for the test harness:
+# without the world there is no exploration insight, without Craft no
+# research table, and nodes can still be bought with insight from anywhere.
+optional_depends = ["tiamat_default_world", "tiamat_default_ui", "tiamat_default_life", "tiamat_default_craft"]
+description = "Insight, research, the shared tree and the Fork."
 license = "GPL-3.0-only"
-# Mods this one needs loaded first, with version bounds if you want them:
-#     depends = ["some_world >=0.2, <1"]
-# Mods this one cannot run beside:
-#     conflicts = ["another_mod"]
+
+# NO `[theme]` HERE, ON PURPOSE. The engine wears the LAST theme in load
+# order, and this mod loads after the interface mod that owns the look.
+
+[[world_option]]
+id = "repath"
+name = "Changing path"
+description = "May a player abandon their chosen path and take the other? Costs every path node and half their insight."
+default = 0
+
+[[world_option]]
+id = "shared_gates"
+name = "Shared tree gates crafting"
+description = "Off: the shared tree only improves recipes. On: bronze and iron recipes need their node first (a slower, research-led game)."
+default = 0

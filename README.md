@@ -3,45 +3,98 @@
 
 # Tiamat Default Progress
 
-The spine of the default game's two paths: insight, the research table, the
-node graph, and the Fork that binds a player to magic or to tech. Both trees
-hang from it; neither exists yet, and this mod is complete before either does
-— both doors, with nothing behind them. `docs/brief.md` is the design it is
-built to. The mod itself is `mods/tiamat_default_progress/`; this repository
-sits beside the engine (`Tiamat`) and its siblings, and the engine's
-`bundle.toml` pins the commit a release carries.
+The climb, for the [Tiamat](https://github.com/IridesiumResearch/Tiamat-Voxel-Game)
+voxel engine: the mod that turns "you can make things" into "you are
+climbing". It keeps one number per player — **insight** — earned by doing
+new things and by studying materials at a research table; a **node graph**
+insight is spent on; and **the Fork**, where a player binds themselves to one
+of two doors and the other closes.
 
-A Tiamat mod, started from the engine's template. It registers one of each
-kind of thing the API offers — a block, a tool, a sound, an action, a dialog,
-an entity — so every part has a worked example beside it. Keep what you need.
+It ships **no doors of its own.** Magic and tech register themselves as
+paths later, and until one does the Fork is a locked room the player can see
+into. What it does ship is the whole *shared* tree (tiers 0 to 2) as
+**refinements** — research that makes Craft's loop better, never research
+that blocks it — and the contract the two trees will be built on.
 
-## What is here
+Written against the engine's public Lua API and nothing else. The rules that
+shape it are in [`AGENTS.md`](AGENTS.md) (vendored from the engine's `api/`),
+and [`stubs/game.lua`](stubs/game.lua) is the API itself. The design is
+[`docs/brief.md`](docs/brief.md). This repository sits beside the engine and
+its siblings, and the engine's `bundle.toml` pins the commit a release
+carries.
 
-| File | What |
-|---|---|
-| `mod.toml` | The manifest: id, name, version, licence, and what this mod depends on or conflicts with. |
-| `init.lua` | Runs once at load. Everything is registered here; the hooks it installs run for ever after. |
-| `textures/block.png` | The beacon's face, 16 by 16. |
-| `sounds/ping.wav` | The beacon's sound. WAV or Ogg Vorbis. |
-| `../../stubs/game.lua` | The whole mod API as editor annotations, vendored from the engine. Documentation and completion in one file. |
-| `../../AGENTS.md` | How to write a mod, for an AI coding assistant and the person supervising it. |
-| `../../.luarc.json` | Points a Lua language server at `stubs/`. |
+## Where it is
+
+Built in the brief's order (§12):
+
+| Step | What | State |
+|---|---|---|
+| 1 | Scaffold, manifest, world options, hook fan-out, the per-player record | **done** |
+| 2 | Insight and the node graph: award, register, validate, `has`, `unlock`; operator words | **done** |
+| 3 | The shared tree, with its effects, and `effects_of` | **done** |
+| 4 | Exploration and discoveries; Craft's firsts | **done** |
+| 5 | The research table and the studies, through Craft's registry | **done** — the studies wait on Craft (sibling ask C5) |
+| 6 | The Research tab (or dialog), discoveries, studies, the HUD | **done** |
+| 7 | The Fork: paths, the Keystone, doors, the lock, repath, modes (`0.1.0`) | **done** |
+| 8 | `shared_gates` wiring; the pacing bot and `docs/pacing.md` (`0.2.0`) | gates wired, waiting on Craft (C1); bot next |
+
+Today a player earns insight from the first time they stand in each of the
+world's biomes and reach each depth band, from Craft's firsts (their first
+fire, bronze, casting, workbench, worn-out tool…), and from studies at the
+research table. They spend it in the Research tab (the interface's screen,
+or G without it) on the shared tree: fire-setting, the charcoal clamp, kiln
+lore, roasting, bellows, tempering, the Keystone. The Keystone recipe opens
+only to a player who has learned it; a door made with it binds them to its
+path, and every node of the other path is refused them for ever — unless the
+world was made with `repath` on. Other mods register paths, nodes,
+discoveries and studies, and ask `has`.
+
+## Layout
+
+```
+mods/tiamat_default_progress/
+  mod.toml          the manifest and the two world options
+  init.lua          load order only
+  config.lua        every number: tier costs, discoveries, studies, the shared tree, the Fork
+  util.lua          small helpers
+  hooks.lua         one engine registration per hook, many subscribers
+  store.lua         the per-player record, cached; the clock
+  insight.lua       earning and spending; discoveries; the HUD values
+  nodes.lua         the graph: register, validate, has, unlock, effects_of
+  craft.lua         the gate, and what Craft tells this mod
+  shared_tree.lua   tiers 0 to 2, paybacks, the shared gates
+  research.lua      the research table, the studies, shapes from the hand
+  fork.lua          paths, the Keystone, the doors, the lock, repath
+  explore.lua       biomes and depths, one player a tick
+  screens.lua       the Research tab, or a dialog
+  commands.lua      `progress`, and the operator's words
+  exports.lua       what other mods may call
+  hud.lua           the client's HUD script: insight, and what just earned some
+  textures/         placeholders, drawn by tools/make_textures.py
+tests/native/       the mod in the engine's real VM, with stand-ins around it
+docs/               the brief, the exports, and the asks of the engine and the siblings
+```
 
 ## Try it
 
-Check it without starting a server — a second, no world left behind:
+Check it without starting a server, from the engine checkout:
 
 ```sh
-server --check-mods <the directory this mod is in>
+cargo run -p server -- --check-mods <a directory holding this mod and its siblings>
 ```
 
-It prints the mods it found in load order and every block they registered;
-a mod with a mistake in it is named, with the line.
+The native check runs the mod through the engine's real VM with a fake
+server around it, stand-ins for the world, Craft and the interface, and
+fixture mods for the two paths. It needs the engine checked out beside this
+repository as `../Tiamat`:
 
-Then put this directory in the server's mods directory (`mods_path` in the
-server's config; `game/` in the engine repository) and start the server. In
-the world: dig anything with the hand, place a beacon, use it, and press the
-wave key (J unless you moved it) for the dialog.
+```sh
+cargo run --manifest-path tests/native/Cargo.toml
+```
+
+In a world: `progress` in chat says where you stand; G (or the interface's
+Research tab) shows the tree. Operators have `progress grant <node>`,
+`progress insight <n>`, `progress path <id|none>` and `progress reset`.
 
 ## Your editor
 
@@ -49,14 +102,6 @@ Any editor with the Lua language server reads `.luarc.json` and gets
 completion, signatures and types for every `game.*` call from `stubs/game.lua`.
 The stubs are kept in step with the engine by its CI, so when you update the
 engine, copy its `api/stubs/game.lua` over yours.
-
-## Where to read next
-
-- `AGENTS.md` — the rules that fail quietly when broken, and the shape of every
-  kind of thing a mod can register.
-- `stubs/game.lua` — every function, with the reason it behaves as it does.
-- The engine repository's `game/` directory — reference mods, each the
-  smallest thing that proves one mechanism.
 
 ## Licence
 
