@@ -107,15 +107,19 @@ C.firsts = {
 -- The first tool a player wears out (Craft's `on_tool_broken`).
 C.worn_out = "make.worn_out"
 
+-- Survival, from Life (life.lua): the first kill of each kind of creature,
+-- the first taste of each food, a first death, a first night slept through.
+C.survival = { kill = 2, eat = 1, death = 5, sleep = 5 }
+
 -- Exploration (explore.lua). Every biome the world's `biome_under` names is a
 -- discovery the first time a player stands in it, worth `biome_insight`.
 C.biome_insight = 3
--- The world has this many biomes (its catalogue, 2026-09-28). Only the
--- Discoveries view's "of N" reads it: the biomes themselves come from the
--- world as they are found (sibling ask W5).
+-- How many biomes there are to find, for a world that does not list them
+-- with `biomes()`. Only the Discoveries view's "of N" reads it.
 C.biome_count = 55
 
--- Depth: the first time a player is this many blocks below `depth_zero`.
+-- Depth: the first time a player is this many blocks under the ground — as
+-- the world's `depth_under` measures it, or below `depth_zero` without it.
 -- The world's ore levels, so a player sees the ore as they pass it.
 C.depth_zero = 0
 C.depths = {

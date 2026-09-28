@@ -23,6 +23,7 @@ local I = tdp.insight
 local N = tdp.nodes
 local F = tdp.fork
 local R = tdp.research
+local E = tdp.explore
 
 local M = {}
 
@@ -59,9 +60,32 @@ local function row(children, size)
     return { type = "container", direction = "row", gap = 8, align = "center", size = size or ROW, children = children }
 end
 
-local function button(name, text, colour, width)
-    return { type = "button", name = name, text = text, size = width,
+local function button(name, text, colour, width, tooltip)
+    return { type = "button", name = name, text = text, size = width, tooltip = tooltip,
         style = { text_colour = colour or INK } }
+end
+
+--- At most 256 bytes, the engine's cap on a tooltip, cut on a character
+--- boundary rather than through one.
+local function capped(text)
+    if #text <= 256 then return text end
+    local cut = 253
+    while cut > 0 and (string.byte(text, cut + 1) or 0) & 0xC0 == 0x80 do cut = cut - 1 end
+    return string.sub(text, 1, cut) .. "..."
+end
+
+--- What hovers over a node: what it does, and what it needs first.
+local function node_tip(node)
+    local parts = { node.text }
+    if #node.requires > 0 then
+        local names = {}
+        for i, r in ipairs(node.requires) do
+            local need = N.node(r)
+            names[i] = need and need.label or r
+        end
+        parts[#parts + 1] = "Needs " .. table.concat(names, ", ") .. "."
+    end
+    return capped(table.concat(parts, " "))
 end
 
 local function heading(text)
@@ -94,7 +118,7 @@ local function node_row(uuid, node, dimmed)
         state = node.cost .. " insight"
     end
     return row({
-        button("node:" .. node.id, node.label, colour, 190),
+        button("node:" .. node.id, node.label, colour, 190, node_tip(node)),
         label(state, colour),
         { type = "spacer", grow = 1 },
     })
@@ -166,20 +190,43 @@ local function discoveries_view(uuid)
         end
     end
 
-    -- The biomes, from whatever the world has named so far.
-    local seen = {}
-    for _, id in ipairs(U.sorted_keys(record.found)) do
-        local name = string.match(id, "^biome:(.+)$")
-        if name then seen[#seen + 1] = U.title(name) end
+    -- The biomes: every one the world lists, found or not, or else those
+    -- found so far.
+    local cells, found = {}, 0
+    if E.biomes then
+        for _, biome in ipairs(E.biomes) do
+            local seen = record.found["biome:" .. biome.id] == true
+            if seen then found = found + 1 end
+            cells[#cells + 1] = label(biome.name, seen and GOOD or DIM)
+        end
+    else
+        for _, id in ipairs(U.sorted_keys(record.found)) do
+            local def = string.match(id, "^biome:") and I.def(id)
+            if def then
+                found = found + 1
+                cells[#cells + 1] = label(def.label, GOOD)
+            end
+        end
     end
-    body[#body + 1] = heading(string.format("Biomes: %d of %d", #seen, C.biome_count))
-    for i = 1, #seen, 3 do
-        body[#body + 1] = row({
-            label(seen[i], GOOD), label(seen[i + 1] or "", GOOD), label(seen[i + 2] or "", GOOD),
-        }, 22)
+    body[#body + 1] = heading(string.format("Biomes: %d of %d", found, E.biome_count()))
+    for i = 1, #cells, 3 do
+        body[#body + 1] = row({ cells[i], cells[i + 1] or label(""), cells[i + 2] or label("") }, 22)
     end
-    if #seen == 0 then
+    if #cells == 0 then
         body[#body + 1] = label("None yet. Walk.", DIM)
+    end
+
+    -- Creatures hunted and foods tasted: families Life names as they come.
+    for _, family in ipairs({ { "kill:", "Creatures" }, { "eat:", "Food" } }) do
+        local found_here = {}
+        for _, id in ipairs(U.sorted_keys(record.found)) do
+            local def = U.starts(id, family[1]) and I.def(id)
+            if def then found_here[#found_here + 1] = row({ label(def.label, GOOD) }, 22) end
+        end
+        if #found_here > 0 then
+            body[#body + 1] = heading(family[2])
+            for _, r in ipairs(found_here) do body[#body + 1] = r end
+        end
     end
     return body
 end

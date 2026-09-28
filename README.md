@@ -39,9 +39,10 @@ Built in the brief's order (§12):
 | 8 | `shared_gates` wiring; the pacing bot and `docs/pacing.md` (`0.2.0`) | gates **done**; the bot next |
 
 Today a player earns insight from the first time their feet reach each of
-the world's biomes and each depth band, from Craft's firsts (their first
-fire, bronze, casting, workbench, worn-out tool…), and from studies at the
-research table. They spend it in the Research tab (the interface's screen,
+the world's biomes and each depth band under the ground, from Craft's firsts (their first
+fire, bronze, casting, workbench, worn-out tool…), from Life's (each kind
+of creature hunted, each food tasted, a first death, a night slept
+through), and from studies at the research table. They spend it in the Research tab (the interface's screen,
 or G without it) on the shared tree: fire-setting, the charcoal clamp, kiln
 lore, roasting, bellows, tempering, the Keystone — each of which Craft reads
 where its number is used: a fire cracks rock sooner, a mould lasts longer. The Keystone recipe opens
@@ -61,6 +62,7 @@ mods/tiamat_default_progress/
   hooks.lua         one engine registration per hook, many subscribers
   store.lua         the per-player record, cached; the clock
   insight.lua       earning and spending; discoveries; the HUD values
+  life.lua          survival discoveries, ghosts, the mode, from Life
   nodes.lua         the graph: register, validate, has, unlock, effects_of
   craft.lua         the gate, and what Craft tells this mod
   shared_tree.lua   tiers 0 to 2, paybacks, the shared gates

@@ -37,6 +37,7 @@ fn main() {
     shared_gates();
     creative();
     interface();
+    survival();
     determinism();
     println!("progress native check: all passed");
 }
@@ -58,6 +59,7 @@ fn load_alone() {
     assert_eq!(form, format!("{MOD}:research"));
     assert!(tree.contains("No door has been built in this world yet."), "{tree}");
     assert!(tree.contains("Firecraft") && tree.contains("Beyond the Fork"));
+    assert!(tree.contains("A log gives a third more charcoal. Needs Firecraft."), "a node says what it needs on hover");
     r.press(PLAYER, "research", "node:shared.hafting");
     assert!(r.last_dialog().unwrap().1.contains("Hafting needs 15 insight; you have 0"));
     r.press(PLAYER, "research", "view:studies");
@@ -133,13 +135,15 @@ fn discoveries() {
     r.tick(200);
     assert!(r.heard(PLAYER).is_empty(), "nothing is polled: standing still, nobody has been anywhere");
     r.moved(PLAYER, (100, 64, 100), None);
-    assert_eq!(r.heard(PLAYER), vec!["Discovered: Temperate woodlands (+3 insight)"]);
+    assert_eq!(r.heard(PLAYER), vec!["Discovered: Temperate Woodlands (+3 insight)"], "the world's own name");
     r.moved(PLAYER, (101, 64, 100), Some((100, 64, 100)));
     assert!(r.heard(PLAYER).is_empty(), "once");
     r.moved(PLAYER, (-51, 64, 100), Some((101, 64, 100)));
-    assert_eq!(r.heard(PLAYER), vec!["Discovered: Taiga (+3 insight)"]);
+    assert_eq!(r.heard(PLAYER), vec!["Discovered: The Taiga (+3 insight)"]);
+    r.moved(PLAYER, (-51, -55, 100), Some((-51, 64, 100)));
+    assert_eq!(r.heard(PLAYER), vec!["Discovered: 60 blocks down (+5 insight)"], "65 under the ground, by the world's measure");
     r.moved(PLAYER, (-51, -250, 100), Some((-51, 64, 100)));
-    assert_eq!(r.heard(PLAYER), vec!["Discovered: 60 blocks down (+5 insight)", "Discovered: 200 blocks down (+8 insight)"]);
+    assert_eq!(r.heard(PLAYER), vec!["Discovered: 200 blocks down (+8 insight)"]);
 
     // Craft's firsts: the root of the tree comes with the first fire.
     r.say("c first fire:lit");
@@ -160,7 +164,8 @@ fn discoveries() {
     r.action(PLAYER, &format!("{MOD}:research"));
     r.press(PLAYER, "research", "view:discoveries");
     let tree = r.last_dialog().unwrap().1;
-    assert!(tree.contains("Biomes: 2 of 55") && tree.contains("Taiga") && tree.contains("Wrought iron"), "{tree}");
+    assert!(tree.contains("Biomes: 2 of 3") && tree.contains("The Taiga") && tree.contains("Savanna") && tree.contains("Wrought iron"), "{tree}");
+    assert!(!tree.contains("The Dunes"), "a biome this world does not hold is not listed");
     println!("discoveries: ok");
 }
 
@@ -429,6 +434,43 @@ fn interface() {
     assert_eq!(r.ask("ui has Study copper"), "yes");
     assert_eq!(r.ask("ui press nonsense"), "false");
     println!("interface: ok");
+}
+
+/// Life's events are discoveries; a ghost touches no door.
+fn survival() {
+    let mut r = Rig::new(Setup { craft: true, life: true, fixtures: paths(), ..Setup::default() });
+    r.join(PLAYER);
+    r.tick(1);
+    r.say("l kill cave_rat");
+    assert_eq!(r.said(), "Discovered: Cave rat, hunted (+2 insight)");
+    r.say("l kill cave_rat");
+    assert!(r.heard(PLAYER).is_empty(), "each kind once");
+    r.say("l kill cow");
+    r.say("l eat tiamat_default_life:raw_meat");
+    r.say("l die");
+    r.say("l sleep");
+    assert_eq!(
+        r.heard(PLAYER),
+        vec![
+            "Discovered: Cow, hunted (+2 insight)",
+            "Discovered: Raw meat, tasted (+1 insight)",
+            "Discovered: A first death (+5 insight)",
+            "Discovered: A night slept through (+5 insight)",
+        ]
+    );
+    assert_eq!(r.ask("progress"), "Insight 15. Path: none yet. Nodes known: 0.");
+    r.action(PLAYER, &format!("{MOD}:research"));
+    r.press(PLAYER, "research", "view:discoveries");
+    let tree = r.last_dialog().unwrap().1;
+    assert!(tree.contains("Cave rat, hunted") && tree.contains("Raw meat, tasted") && tree.contains("A first death"), "{tree}");
+
+    op(&r, PLAYER);
+    r.say("progress grant shared.keystone");
+    r.say("l ghost");
+    assert!(r.use_block(PLAYER, "schism_magic:attunement_stone"));
+    assert_eq!(r.said(), "Your hand passes through the door. The dead choose nothing.");
+    assert_eq!(r.ask("m path"), "nil");
+    println!("survival: ok");
 }
 
 /// The same play twice gives the same storage, key for key.

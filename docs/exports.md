@@ -107,7 +107,9 @@ All are namespaced `tiamat_default_progress:` by the engine.
   `craft.smelt_ore_units`, `craft.bloom_ticks`, `craft.anvil_strikes` and
   `craft.chisel_wear_percent`, each an integer delta on Craft's own number.
 - **Discoveries:** `make.*` (twelve firsts of making), `station.*` (seven
-  first stations), `depth.60` … `depth.2000`, and the family `biome:*`.
+  first stations), `depth.60` … `depth.2000`, and the family `biome:*`;
+  with Life, the families `kill:*` (a creature's short id) and `eat:*` (a
+  food's qualified id with its colon a dot), `life.death` and `life.sleep`.
 - **Into Craft:** the station `tiamat_default_progress:research_table`; the
   recipes `research_table`, `keystone`, `door_<path>` for each path that
   gives a recipe, and the studies `study_rock`, `study_copper`, `study_tin`,
@@ -140,6 +142,8 @@ Its HUD script is sent `insight` and, for a few seconds after an award,
 
 Not exports, listed so the direction is clear: Craft's recipe registry,
 `set_requires`, gate and effects (this mod hands it `has` and
-`effects_of`), and subscribers (`on_first`, `on_crafted`, `on_tool_broken`); the
-world's `biome_under`; the interface's `add_tab`, `open`, `redraw` and
-theme colours; and Life's world option `mode`.
+`effects_of`), and subscribers (`on_first`, `on_crafted`,
+`on_tool_broken`); the world's `biome_under`, `biomes` and `depth_under`;
+the interface's `add_tab`, `open`, `redraw` and theme colours; and Life's
+`mode`, `is_ghost`, `on_kill`, `on_eat`, `on_death` and `on_sleep` (its
+world option `mode` without it).

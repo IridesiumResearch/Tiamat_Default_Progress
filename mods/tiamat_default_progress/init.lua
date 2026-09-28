@@ -32,12 +32,13 @@ tdp.util = load("util")
 load("hooks")                       -- one engine registration per hook, many subscribers
 tdp.store = load("store")           -- the per-player record, cached; the clock
 tdp.insight = load("insight")       -- earning and spending; discoveries; the HUD values
+tdp.life = load("life")             -- survival discoveries, ghosts, the mode, from Life
 tdp.nodes = load("nodes")           -- the graph: register, validate, has, unlock, effects
 tdp.craft = load("craft")           -- the gate, and what Craft tells this mod
 load("shared_tree")                 -- tiers 0 to 2, and the shared gates
 tdp.research = load("research")     -- the research table and the studies
 tdp.fork = load("fork")             -- paths, the Keystone, the doors, the lock
-load("explore")                     -- biomes and depths, one player a tick
+tdp.explore = load("explore")       -- biomes and depths, as a player's feet arrive
 tdp.screens = load("screens")       -- the Research tab, or a dialog
 load("commands")                    -- `progress`, and the operator's words
 

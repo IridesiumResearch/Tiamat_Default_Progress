@@ -625,9 +625,11 @@ impl ent::Access for Entities {
 
 // --- The mods around this one ------------------------------------------------------
 
-/// A stand-in for the world: the blocks this mod names, and `biome_under`
+/// A stand-in for the world: the blocks this mod names, `biome_under`
 /// answering by where you stand — west of 0 is taiga, east of 1000 savanna,
-/// the woodland between.
+/// the woodland between — `biomes()` naming them (and a fourth not in this
+/// world), and `depth_under` ten blocks deeper than `-y`, as a ground at
+/// y = 10 would be.
 pub const WORLD: &str = r##"
 for _, id in ipairs({ "orichalcum", "crystal", "metal", "diamond", "wet_clay", "stone" }) do
     game.register_block{ id = id }
@@ -639,6 +641,15 @@ game.export{
         if x >= 1000 then return "savanna" end
         return "temperate_woodlands"
     end,
+    biomes = function()
+        return {
+            { id = "temperate_woodlands", name = "Temperate Woodlands", findable = true },
+            { id = "taiga", name = "The Taiga", findable = true },
+            { id = "savanna", name = "Savanna", findable = true },
+            { id = "dunes", name = "The Dunes", findable = false },
+        }
+    end,
+    depth_under = function(x, y, z) return 10 - y end,
 }
 "##;
 
@@ -807,6 +818,32 @@ game.register_on_chat(function(e)
 end)
 "##;
 
+/// A stand-in for Life, as this mod uses it: the mode, ghosts, and the
+/// survival events, which `l ...` in chat raises — `l kill <kind>`,
+/// `l eat <food>`, `l die`, `l sleep`, and `l ghost` to make the speaker one.
+pub const LIFE: &str = r##"
+local subs = { kill = {}, eat = {}, death = {}, sleep = {} }
+local ghosts = {}
+local function sub(list) return function(fn) list[#list + 1] = fn return true end end
+game.export{
+    version = 1,
+    mode = function() return game.world_option("tiamat_default_life:mode") or "Default" end,
+    is_ghost = function(uuid) return ghosts[uuid] == true end,
+    on_kill = sub(subs.kill), on_eat = sub(subs.eat), on_death = sub(subs.death), on_sleep = sub(subs.sleep),
+}
+game.register_on_chat(function(e)
+    local word, rest = string.match(e.text, "^l (%S+)%s*(.*)$")
+    if not word then return end
+    local fire = function(list, ...) for _, fn in ipairs(list) do fn(e.player, ...) end end
+    if word == "kill" then fire(subs.kill, rest)
+    elseif word == "eat" then fire(subs.eat, rest)
+    elseif word == "die" then fire(subs.death)
+    elseif word == "sleep" then fire(subs.sleep)
+    elseif word == "ghost" then ghosts[e.player] = true end
+    return false
+end)
+"##;
+
 // --- The rig -----------------------------------------------------------------
 
 /// Which of the world around the mod to load.
@@ -820,6 +857,8 @@ pub struct Setup {
     pub craft: bool,
     /// The stand-in interface.
     pub ui: bool,
+    /// The stand-in Life.
+    pub life: bool,
     /// Life's world option, "Default", "Creative" or "Adventure".
     pub mode: Option<String>,
     /// This mod's own world options that are on: "repath", "shared_gates".
@@ -889,6 +928,7 @@ impl Rig {
         for (on, id, source) in [
             (setup.world, "tiamat_default_world", WORLD),
             (setup.ui, "tiamat_default_ui", UI),
+            (setup.life, "tiamat_default_life", LIFE),
             (setup.craft, "tiamat_default_craft", CRAFT),
         ] {
             if on {

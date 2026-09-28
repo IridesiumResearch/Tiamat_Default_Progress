@@ -228,6 +228,7 @@ end
 function F.door_verdict(uuid, id)
     local record = S.record(uuid)
     local path = F.paths[id]
+    if tdp.life.ghost(uuid) then return nil, "Your hand passes through the door. The dead choose nothing." end
     if record.path == id then return nil, "You are already of " .. path.label .. "." end
     if record.path ~= nil then
         if not C.repath then return nil, path.refusal end

@@ -11,8 +11,9 @@
 -- values this mod and others fill while mods load, and `discover`, which is
 -- idempotent. A discovery id ending in `:*` is a FAMILY: the world's biomes
 -- are `biome:*`, so any biome the world names is a discovery the first time
--- a player stands in it, without this mod keeping a list of fifty-five
--- names the world may rename (sibling ask W5).
+-- a player stands in it, without this mod keeping a list of names the world
+-- may rename. A family may carry `names`, member to display name, which the
+-- world's `biomes()` fills; a member it does not name is titled from its id.
 
 local C = tdp.config
 local S = tdp.store
@@ -99,7 +100,13 @@ function I.register(spec)
     local family = string.match(id, "^(.+):%*$")
     if family then
         if families[family] then return nil, "discovery " .. id .. " is already registered" end
-        families[family] = { insight = amount, label = spec.label, group = group }
+        local names = {}
+        if type(spec.names) == "table" then
+            for key, name in pairs(spec.names) do
+                if type(key) == "string" and type(name) == "string" then names[key] = string.sub(name, 1, 48) end
+            end
+        end
+        families[family] = { insight = amount, label = spec.label, group = group, names = names }
         return true
     end
     if string.find(id, "*", 1, true) then return nil, "only a family ends in :*" end
@@ -118,7 +125,7 @@ function I.def(id)
     local family, member = string.match(id, "^(.-):(.+)$")
     local f = family and families[family]
     if not f or #id > 96 or not string.match(member, "^[%w_%.]+$") then return nil end
-    local name = U.title(member)
+    local name = f.names[member] or U.title(member)
     return {
         id = id, insight = f.insight, group = f.group,
         label = string.sub(f.label and string.format(f.label, name) or name, 1, 64),
@@ -173,7 +180,6 @@ end
 for _, spec in ipairs(C.discoveries) do
     assert(I.register(spec))
 end
-assert(I.register{ id = "biome:*", insight = C.biome_insight, group = "biomes" })
 for _, depth in ipairs(C.depths) do
     assert(I.register{
         id = "depth." .. depth.blocks, insight = depth.insight, group = "depths",

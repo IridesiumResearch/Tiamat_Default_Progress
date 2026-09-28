@@ -38,53 +38,42 @@ its three asks back (P1 to P3) answered here the same day.
 
 ## Tiamat Default Life
 
-### L8. A stat another mod can add (2026-09-28): OPEN, for magic
+### L6 to L8: ANSWERED 2026-09-28 (Life f405783)
 
-**Wanted.** `add_stat(id, { max, regen, hud })`, so magic's mana bar (and
-tech's charge) is drawn by Life's HUD beside hunger rather than by a second
-HUD of magic's own.
-
-### L7. Mode and ghosts, readable (2026-09-28): OPEN
-
-**Wanted.** `mode()` and `is_ghost(uuid)` exported, so a door refuses a
-ghost without this mod re-deriving it.
-
-**Today.** The mode is read from Life's world option; ghosts are not seen,
-and a ghost could choose at a door.
-
-### L6. Survival events (2026-09-28): OPEN
-
-**Wanted.** `on_kill(fn(uuid, creature))`, `on_death(fn(uuid))`,
-`on_eat(fn(uuid, material))`, `on_sleep(fn(uuid))`, for the survival
-discoveries (the brief's §3.1: about 51 insight).
-
-**Today.** None of them are discoveries yet.
+- **L6, survival events:** `on_kill`, `on_eat`, `on_death` and `on_sleep`.
+  `life.lua` makes each a discovery: the families `kill:*` and `eat:*`,
+  named from what Life reports, and `life.death` and `life.sleep`.
+- **L7, mode and ghosts:** `mode()` is read at load; a ghost touching a
+  door hears that the dead choose nothing.
+- **L8, `add_stat`:** there for magic's mana and tech's charge; nothing in
+  this mod uses it.
 
 ## Tiamat Default World
 
-### W6. Depth from the surface (2026-09-28): OPEN, nice to have
+### W5 and W6: BUILT, not yet committed in World (2026-09-28)
 
-**Wanted.** How far under the ground a place is, or the world's own depth
-bands, exported.
+`biomes()`, `depth_under(x, y, z)` and `depth_band(x, y, z)` are in the
+world's working tree and its `docs/exports.md`. This mod uses the first two
+where they exist and falls back where they do not, so it is right before
+and after World commits:
 
-**Today.** A depth is counted down from y = 0 (`C.depth_zero`), which is
-right under the sea and wrong under a mountain.
-
-### W5. The biome list (2026-09-28): OPEN
-
-**Wanted.** `biomes()`: every biome id with its display name.
-
-**Today.** A biome is a discovery of the family `biome:*`, named from its id
-the first time `biome_under` answers it, and the Discoveries view counts
-"of 55" from a number in `config.lua`. With the list, the view could show
-the biomes not yet found, under their real names.
+- **W5, the biome list:** a biome discovery carries the world's own name,
+  and the Discoveries view lists every findable biome, found or not, "of"
+  their number. Without it, names come from ids and the count from
+  `C.biome_count`.
+- **W6, depth from the surface:** depth bands are counted by
+  `depth_under`, the ground as generated. Without it, down from
+  `C.depth_zero`.
 
 ## Tiamat Default UI
 
-### U5. A tooltip on a button (2026-09-28): OPEN
+### U5. A tooltip on a button: LANDED IN THE ENGINE (2655837); one line in the UI
 
-**Wanted.** A `hover` text on a button, so a locked node can say what it
-requires without a status line.
+A `tooltip` on any dialog node. Every node button here carries one — what
+the node does and what it needs — and the plain dialog shows it. The UI
+copies another mod's tree by a list of fields (`screen.lua`,
+`WIDGET_FIELDS`), which does not have `tooltip` yet, so on the Research
+tab it is dropped until the UI adds it (its engine ask 15 says it will).
 
 ### U4. `scroll` on a tab (2026-09-28): ANSWERED
 
