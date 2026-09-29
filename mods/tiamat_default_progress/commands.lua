@@ -3,7 +3,9 @@
 --
 -- Chat words. `progress` alone, for anyone, says where a player stands, and
 -- `progress sources` where their insight came from and went (the pacing
--- ledger, docs/pacing.md). The other subcommands are for operators —
+-- ledger, docs/pacing.md); `progress where` gives the block their feet are
+-- in and the clock, for the pacing bot. The other subcommands are for
+-- operators —
 -- testing, and an admin putting a shared world right:
 --
 --     progress grant <node>     give a node, without cost or prerequisites
@@ -43,55 +45,52 @@ local function sources(uuid)
     return "Insight by source: " .. table.concat(parts, ", ") .. "."
 end
 
+--- A command's reply is what it returns: the hook hands it back to the
+--- engine, which says it to the speaker alone — one line, and not the
+--- engine's "a mod refused that message" that a bare `false` would bring.
 local function command(player, rest)
     local word, arg = string.match(rest, "^(%S*)%s*(.-)%s*$")
-    if word == "" then
-        game.chat_to(player, summary(player))
-        return
-    end
-    if word == "sources" then
-        game.chat_to(player, sources(player))
-        return
+    if word == "" then return summary(player) end
+    if word == "sources" then return sources(player) end
+    if word == "where" then
+        -- For a script finding its feet (the pacing bot): the block, and the
+        -- clock the ledger is timed by.
+        local x, y, z = tdp.explore.where(player)
+        if not x then return "nowhere yet" end
+        return string.format("at %d %d %d t=%d", x, y, z, S.now())
     end
     -- A sentence that only starts with the word is chat.
     if not (C.dev_commands and SUBCOMMANDS[word]) then return false end
     if not game.is_operator(player) then
-        game.chat_to(player, "progress " .. word .. " is for operators")
-        return
+        return "progress " .. word .. " is for operators"
     end
     if word == "grant" then
         local node = N.node(arg)
-        if not node or node.broken then
-            game.chat_to(player, "no node " .. arg)
-            return
-        end
+        if not node or node.broken then return "no node " .. arg end
         if node.path ~= "shared" and S.record(player).path ~= node.path then
-            game.chat_to(player, node.label .. " is " .. node.path .. "'s; take that path first")
-            return
+            return node.label .. " is " .. node.path .. "'s; take that path first"
         end
-        N.grant(player, arg)
+        N.grant(player, arg, true)
+        return "Learned: " .. node.label
     elseif word == "insight" then
         local n = U.whole(tonumber(arg), 0, C.max_insight)
-        if not n then
-            game.chat_to(player, "progress insight <whole number>")
-            return
-        end
+        if not n then return "progress insight <whole number>" end
         I.award(player, n - S.record(player).insight, nil, "operator")
-        game.chat_to(player, "insight " .. S.record(player).insight)
+        return "insight " .. S.record(player).insight
     elseif word == "path" then
         if arg == "none" then
             S.set_path(player, nil)
             N.revoke(player, "shared.fork")
-            game.chat_to(player, "no path")
+            return "no path"
         elseif F.paths[arg] then
             F.choose(player, arg)
-        else
-            game.chat_to(player, "no path " .. arg)
+            return "path " .. arg
         end
+        return "no path " .. arg
     elseif word == "reset" then
         S.reset(player)
         I.show(player)
-        game.chat_to(player, "forgotten")
+        return "forgotten"
     end
 end
 

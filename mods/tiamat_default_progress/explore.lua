@@ -61,7 +61,24 @@ local function depth(x, y, z)
     return C.depth_zero - y
 end
 
+local last = {}   -- uuid -> { x, y, z }: the block their feet were last in
+
+--- Where a player's feet last were, as `x, y, z`, or nil.
+function E.where(uuid)
+    local p = last[uuid]
+    if p then return p.x, p.y, p.z end
+end
+
+tdp.on_leave(function(event) last[event.player] = nil end)
+
 tdp.on_move(function(event)
+    if type(event.x) == "number" then last[event.player] = { x = event.x, y = event.y, z = event.z } end
+    -- The first placement after a join (or a move between domains) has no
+    -- `from`, and is not where the player stands: the engine places a body
+    -- before the world mod moves it to its spawn, and that first place can be
+    -- two thousand blocks under the ground. The move to the spawn comes next,
+    -- with a `from`, and is the one that counts.
+    if event.from == nil then return end
     local uuid, x, y, z = event.player, event.x, event.y, event.z
     if type(x) ~= "number" or type(y) ~= "number" or type(z) ~= "number" then return end
     if biome_under then

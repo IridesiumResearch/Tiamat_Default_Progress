@@ -54,7 +54,9 @@ end
 --- Runs `fn(player, rest)` when a player says `word` (case-insensitive), alone
 --- or followed by more words. The message is swallowed unless `fn` answers
 --- `false`, which is how a word lets a sentence that only starts with it
---- through to chat.
+--- through to chat. A string `fn` answers is its reply, said to the speaker
+--- alone by the engine; answering nothing swallows the line with the
+--- engine's own "a mod refused that message".
 ---@param word string
 ---@param fn fun(player: string, rest: string): boolean?
 function tdp.on_chat(word, fn)
@@ -109,7 +111,9 @@ game.register_on_chat(function(event)
     if first == nil then return end
     local fn = words[string.lower(first)]
     if fn == nil then return end
-    if fn(event.player, rest) == false then return end
+    local verdict = fn(event.player, rest)
+    if verdict == false then return end
+    if type(verdict) == "string" and verdict ~= "" then return verdict end
     return false
 end)
 

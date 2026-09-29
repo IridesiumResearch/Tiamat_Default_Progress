@@ -5,11 +5,14 @@
 -- here, a plain dialog on the `research` action (G) when it is not. One tree
 -- serves both.
 --
--- Three views. The TREE: insight at the top with a bar toward the cheapest
--- node the player could learn next, and a scroll of tier rows, one node a
--- row — bright when it can be learned, dim when it cannot, marked when it is
--- known — and under them the paths, "Beyond the Fork": both, dimmed, before
--- the choice, so it is seen long before it is made; only one's own after.
+-- Everything centred. Three views. The TREE: insight at the top with a bar
+-- toward the cheapest node the player could learn next (its price on
+-- hover), and a scroll of tiers, each a small mark in the display face over
+-- a row of square tiles — a frame for the node's picture, its name, and on
+-- hover its price, what it does and what it needs; bright when it can be
+-- learned, dim when it cannot, green when it is known — and under them the
+-- paths, "Beyond the Fork": both, dimmed, before the choice, so it is seen
+-- long before it is made; only one's own after.
 -- DISCOVERIES: what has been found and what is left, the biomes as a count
 -- and a list. STUDIES: what the research table takes and pays, and the
 -- carved shape in the hand.
@@ -50,6 +53,15 @@ end
 
 local ROW = 28
 
+-- The interface's display face (Cinzel), for the small tier marks; nil
+-- without the interface, which draws them in the client's own face.
+local DISPLAY = ui and type(ui.theme) == "table" and type(ui.theme.font) == "string" and ui.theme.font or nil
+
+-- A node tile: a square frame for its picture (none are drawn yet; the
+-- frame is where one goes), its name under it, and everything else — what
+-- it costs, what it does, what it needs — on hover.
+local TILE_W, TILE_H, PICTURE, TILE_GAP = 80, 98, 44, 8
+
 -- Builders --------------------------------------------------------------------------
 
 local function label(text, colour, size)
@@ -58,6 +70,14 @@ end
 
 local function row(children, size)
     return { type = "container", direction = "row", gap = 8, align = "center", size = size or ROW, children = children }
+end
+
+--- A row of `children` in the middle of the width: spacers either side.
+local function centred(children, size, gap)
+    local out = { { type = "spacer", grow = 1 } }
+    for _, child in ipairs(children) do out[#out + 1] = child end
+    out[#out + 1] = { type = "spacer", grow = 1 }
+    return { type = "container", direction = "row", gap = gap or 8, align = "center", size = size or ROW, children = out }
 end
 
 local function button(name, text, colour, width, tooltip)
@@ -74,9 +94,18 @@ local function capped(text)
     return string.sub(text, 1, cut) .. "..."
 end
 
---- What hovers over a node: what it does, and what it needs first.
-local function node_tip(node)
-    local parts = { node.text }
+--- What hovers over a node: its name and state or price, what it does, and
+--- what it needs first.
+local function node_tip(uuid, node)
+    local state
+    if N.has(uuid, node.id) then
+        state = "known"
+    elseif node.auto then
+        state = "comes of itself"
+    else
+        state = node.cost .. " insight"
+    end
+    local parts = { node.label .. " (" .. state .. ").", node.text }
     if #node.requires > 0 then
         local names = {}
         for i, r in ipairs(node.requires) do
@@ -88,8 +117,10 @@ local function node_tip(node)
     return capped(table.concat(parts, " "))
 end
 
+--- A section's heading: the display face, small, muted, out of the way.
 local function heading(text)
-    return label(text, ACCENT, 18)
+    return centred({ { type = "label", text = text,
+        style = { font = DISPLAY, text_size = 13, text_colour = DIM } } }, 18)
 end
 
 --- The cheapest node a player could learn but for insight, or nil.
@@ -105,24 +136,43 @@ local function next_node(uuid)
     return best
 end
 
-local function node_row(uuid, node, dimmed)
+-- Tile colours: known, learnable now, and not yet.
+local TILE = {
+    known = { background = { 44, 66, 44, 255 }, border = { 120, 180, 110, 255 } },
+    ready = { background = { 58, 50, 36, 255 }, border = ACCENT },
+    locked = { background = { 30, 28, 26, 255 }, border = { 70, 66, 60, 255 } },
+}
+
+local function node_tile(uuid, node, dimmed)
     local known = N.has(uuid, node.id)
-    local ok = not dimmed and N.can(uuid, node.id)
-    local colour = known and GOOD or (ok and INK or DIM)
-    local state
-    if known then
-        state = "known"
-    elseif node.auto then
-        state = "comes of itself"
-    else
-        state = node.cost .. " insight"
-    end
-    return row({
-        button("node:" .. node.id, node.label, colour, 190, node_tip(node)),
-        label(state, colour),
-        { type = "spacer", grow = 1 },
-    })
+    local ready = not known and not dimmed and N.can(uuid, node.id)
+    local look = known and TILE.known or (ready and TILE.ready or TILE.locked)
+    local colour = known and GOOD or (ready and INK or DIM)
+    local tip = node_tip(uuid, node)
+    return {
+        type = "container", direction = "column", align = "center", gap = 4, padding = 4,
+        size = TILE_W, cross_size = TILE_H, tooltip = tip,
+        style = { background = look.background, border = look.border },
+        children = {
+            -- Where the node's picture will go.
+            { type = "container", size = PICTURE, cross_size = PICTURE, tooltip = tip,
+              style = { border = look.border } },
+            { type = "button", name = "node:" .. node.id, text = node.label, grow = 1, tooltip = tip,
+              style = { text_colour = colour, text_size = 11 } },
+        },
+    }
 end
+
+--- A tier's nodes as centred rows of tiles, six to a row.
+local function tile_rows(uuid, nodes, dimmed, body)
+    for i = 1, #nodes, 6 do
+        local tiles = {}
+        for j = i, math.min(i + 5, #nodes) do tiles[#tiles + 1] = node_tile(uuid, nodes[j], dimmed) end
+        body[#body + 1] = centred(tiles, TILE_H, TILE_GAP)
+    end
+end
+
+local TIER_MARK = { [0] = "I", "II", "III", "IV", "V", "VI", "VII", "VIII" }
 
 local function tree_view(uuid)
     local body = {}
@@ -133,8 +183,8 @@ local function tree_view(uuid)
             if node.tier == tier and node.path == "shared" then shared[#shared + 1] = node end
         end
         if #shared > 0 then
-            body[#body + 1] = heading("Tier " .. tier)
-            for _, node in ipairs(shared) do body[#body + 1] = node_row(uuid, node) end
+            body[#body + 1] = heading("Tier " .. TIER_MARK[tier])
+            tile_rows(uuid, shared, false, body)
         end
     end
 
@@ -142,7 +192,7 @@ local function tree_view(uuid)
     local paths = F.list()
     local mine = S.record(uuid).path
     if #paths == 0 then
-        body[#body + 1] = label("No door has been built in this world yet.", DIM)
+        body[#body + 1] = centred({ label("No door has been built in this world yet.", DIM) }, 22)
     end
     for _, path in ipairs(paths) do
         if mine == nil or mine == path.id then
@@ -150,13 +200,12 @@ local function tree_view(uuid)
             for _, node in ipairs(nodes) do
                 if node.path == path.id then own[#own + 1] = node end
             end
-            body[#body + 1] = label(path.label .. (mine == path.id and " (your path)" or ""), mine and GOOD or DIM)
+            body[#body + 1] = centred({ label(path.label .. (mine == path.id and " (your path)" or ""),
+                mine and GOOD or DIM) }, 22)
             if #own == 0 then
-                body[#body + 1] = label("Nothing is written here yet.", DIM)
+                body[#body + 1] = centred({ label("Nothing is written here yet.", DIM) }, 22)
             end
-            for _, node in ipairs(own) do
-                body[#body + 1] = node_row(uuid, node, mine == nil)
-            end
+            tile_rows(uuid, own, mine == nil, body)
         end
     end
     return body
@@ -277,23 +326,24 @@ function M.build(uuid)
     local function tab_button(name, text)
         return button("view:" .. name, text, view == name and ACCENT or INK)
     end
+    local path = record.path and F.paths[record.path] and F.paths[record.path].label
     return {
         type = "container", direction = "column", gap = 6, padding = 6, grow = 1, children = {
-            row({
-                label(string.format("Insight %d", record.insight), ACCENT, 20),
-                { type = "progress", permille = permille, grow = 1 },
-                label(target and string.format("next: %s, %d", target.label, target.cost) or "", DIM),
-            }, 30),
-            row({
+            centred({
+                { type = "label", text = string.format("Insight %d", record.insight),
+                  style = { font = DISPLAY, text_size = 18, text_colour = ACCENT } },
+                { type = "progress", permille = permille, size = 160,
+                  tooltip = target and string.format("Next: %s, %d insight", target.label, target.cost)
+                      or "Nothing left to learn here." },
+            }, 28),
+            centred({
                 tab_button("tree", "Tree"),
                 tab_button("discoveries", "Discoveries"),
                 tab_button("studies", "Studies"),
-                { type = "spacer", grow = 1 },
-                label(record.path and F.paths[record.path] and F.paths[record.path].label or "", GOOD),
-            }, 30),
-            label(status[uuid] or "", DIM),
+            }, 28),
+            centred({ label(status[uuid] or (path and ("Your path: " .. path)) or "", DIM) }, 20),
             { type = "scroll", grow = 1, children = {
-                { type = "container", direction = "column", gap = 4, children = body },
+                { type = "container", direction = "column", gap = 6, children = body },
             } },
         },
     }
@@ -331,9 +381,13 @@ function M.redraw(uuid)
     end
 end
 
---- Opens the screen.
+--- Opens the screen: the interface's, on the Research tab, when the
+--- interface is here — never a panel of this mod's own beside it.
 function M.open(uuid)
-    if ui and ui.open(uuid, M.tab) then return end
+    if ui then
+        ui.open(uuid, M.tab)
+        return
+    end
     open[uuid] = true
     game.show_dialog{ player = uuid, form = "research", tree = M.build(uuid) }
 end

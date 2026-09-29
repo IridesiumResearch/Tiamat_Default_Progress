@@ -16,14 +16,14 @@ Numbered as the brief (`docs/brief.md` §11) numbered them.
 
 | Item | State | In this mod |
 |---|---|---|
-| 4 a bot that can play a station | Open. | the pacing is a model and a ledger a person's session fills (`docs/pacing.md`). |
+| 4 a bot that can play a station | Landed, engine ff0bbda. | the pacing bot walks a real world and reads its ledger (`tools/pacing/`). |
 | 3 a position-change event | Landed, engine cbbbc5e. | `explore.lua` hears `register_on_player_move`; the round-robin poll is gone. |
 | 2 a per-player storage namespace, or a key ceiling | Landed, engine cbbbc5e. | one key per fact stays: the save now writes only the keys that changed. |
 | 1 `keys(prefix)` | Landed, engine cbbbc5e. | a player's record is four prefix reads (`store.lua`). |
 
-One is open.
+Nothing is open.
 
-## 4. A bot that can play a station (2026-09-28): OPEN
+## 4. A bot that can play a station: LANDED 2026-09-28 (engine ff0bbda)
 
 **Wanted.** Three calls on the `bot` script API: `bot.use(x, y, z)` (the
 place control on a block with nothing to place, as a player's right-click
@@ -42,6 +42,13 @@ first hours and read `progress sources` at the end.
 **Smallest change.** Three commands on the bot's existing channel: a use
 message the client already sends, a dialog event it already sends, and a
 queue of the chat it already receives.
+
+**Landed** as `bot.use`, `bot.press` and `bot.heard`. The pacing bot
+(`tools/pacing/walk.lua`, run by `tools/pacing/run.py`) walks a fresh world
+and reads its ledger back through `bot.heard`; its first run found the
+join-time placement that paid a new player every depth band at once. It
+plays exploration only: placing a campfire or a kiln wants the block's
+numeric id, which a script has no way to look up by name.
 
 ## 3. A position-change event: LANDED 2026-09-28 (engine cbbbc5e)
 

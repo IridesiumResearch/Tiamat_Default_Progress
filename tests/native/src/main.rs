@@ -59,7 +59,7 @@ fn load_alone() {
     assert_eq!(form, format!("{MOD}:research"));
     assert!(tree.contains("No door has been built in this world yet."), "{tree}");
     assert!(tree.contains("Firecraft") && tree.contains("Beyond the Fork"));
-    assert!(tree.contains("A log gives a third more charcoal. Needs Firecraft."), "a node says what it needs on hover");
+    assert!(tree.contains("Charcoal clamp (15 insight). A log gives a third more charcoal. Needs Firecraft."), "a node's price, lesson and needs are on hover");
     r.press(PLAYER, "research", "node:shared.hafting");
     assert!(r.last_dialog().unwrap().1.contains("Hafting needs 15 insight; you have 0"));
     r.press(PLAYER, "research", "view:studies");
@@ -139,7 +139,11 @@ fn discoveries() {
     r.join(PLAYER);
     r.tick(200);
     assert!(r.heard(PLAYER).is_empty(), "nothing is polled: standing still, nobody has been anywhere");
-    r.moved(PLAYER, (100, 64, 100), None);
+    // The engine's first placement of a joining body is not where they
+    // stand: it can be far under the ground. Nothing is discovered there.
+    r.moved(PLAYER, (-40, -3000, 100), None);
+    assert!(r.heard(PLAYER).is_empty(), "no jackpot on join");
+    r.moved(PLAYER, (100, 64, 100), Some((-40, -3000, 100)));
     assert_eq!(r.heard(PLAYER), vec!["Discovered: Temperate Woodlands (+3 insight)"], "the world's own name");
     r.moved(PLAYER, (101, 64, 100), Some((100, 64, 100)));
     assert!(r.heard(PLAYER).is_empty(), "once");
@@ -149,6 +153,7 @@ fn discoveries() {
     assert_eq!(r.heard(PLAYER), vec!["Discovered: 60 blocks down (+5 insight)"], "65 under the ground, by the world's measure");
     r.moved(PLAYER, (-51, -250, 100), Some((-51, 64, 100)));
     assert_eq!(r.heard(PLAYER), vec!["Discovered: 200 blocks down (+8 insight)"]);
+    assert!(r.ask("progress where").starts_with("at -51 -250 100 t="), "where the feet are, for the pacing bot");
 
     // Craft's firsts: the root of the tree comes with the first fire.
     r.say("c first fire:lit");
@@ -498,8 +503,8 @@ fn determinism() {
         for node in ["shared.fire_setting", "shared.charcoal_clamp", "shared.kiln_lore", "shared.roasting"] {
             r.say(&format!("m unlock {node}"));
         }
-        r.moved(OTHER, (2000, -500, 0), None);
-        r.moved(PLAYER, (-5, 10, 0), None);
+        r.moved(OTHER, (2000, -500, 0), Some((2000, 64, 0)));
+        r.moved(PLAYER, (-5, 10, 0), Some((0, 64, 0)));
         r.tick(200);
         r.say("progress grant shared.keystone");
         r.use_block(PLAYER, "schism_magic:attunement_stone");

@@ -20,9 +20,13 @@ three hours, and when each shared node came within reach.
   them by `progress sources`, and logged by the server as a line
   `tiamat_default_progress: pacing t=<tick> player=<id> source=<source>
   delta=<n> total=<n>` while `pacing_log` is on. A playtest's log is
-  the table below with real minutes in it. The engine's `bot` cannot
-  play Craft's loop yet — it has no use, no dialog and no chat to read
-  (engine ask 4) — so for now the measurement is a person playing.
+  the table below with real minutes in it.
+- **The pacing bot** measures the exploring half for real:
+  `python tools/pacing/run.py --minutes N` walks the engine's `bot`
+  across a fresh world on a real server with the default mods, and
+  writes "Measured: walking" at the end of this file. Craft's loop
+  wants blocks placed by numeric id, which a bot script cannot look up
+  by name, so that half is a person's session for now.
 
 ## The model
 
@@ -85,7 +89,62 @@ when it rewrites the tables above.
   forty-five hours. That is the brief's shape — the table is the climb —
   but whether forty-five hours is the right length is a question for real
   play, not for this model.
+- **Measured, walking pays little.** Thirty minutes of the bot walking a
+  real world (the table at the end) found four biomes — three in the
+  first thirteen minutes, then none in seventeen as the spiral widened
+  over ground of the same biome — and one survival first: 17 insight. The
+  Spindle's biomes are laid out kilometres apart, so the brief's "about
+  165 from biomes" is many hours of travel, not an afternoon. If
+  exploration is meant to carry the shared tree, `biome_insight` (3) is
+  the number to turn; that is the designer's call, and nothing has been
+  turned.
 - **Nothing in `config.lua` has been changed on the model's say-so.** The
   brief asks for the pacing to be measured, not guessed; the model is the
   guess to measure against. After a playtest, `progress sources` (or the
   server log's `pacing` lines) gives the real version of the first table.
+
+## Measured: walking
+
+Written by `python tools/pacing/run.py --minutes 30` on 2026-09-29: the pacing
+bot (`tools/pacing/walk.lua`) walking an outward square spiral from the
+world's spawn on a real server with the default mods and a fresh world.
+Minutes are the server's clock. Exploration only — Craft's loop is a
+person's session for now (see the top of this file).
+
+| Minute | found_biomes | found_survival | Total |
+|---|---|---|---|
+| 0.0 | 3 | 0 | 3 |
+| 0.3 | 3 | 0 | 3 |
+| 0.5 | 3 | 0 | 3 |
+| 1.0 | 3 | 0 | 3 |
+| 1.6 | 6 | 0 | 6 |
+| 2.4 | 9 | 0 | 9 |
+| 3.2 | 9 | 0 | 9 |
+| 3.8 | 9 | 0 | 9 |
+| 4.1 | 9 | 0 | 9 |
+| 5.4 | 9 | 0 | 9 |
+| 6.7 | 9 | 0 | 9 |
+| 7.3 | 9 | 0 | 9 |
+| 7.4 | 9 | 0 | 9 |
+| 9.1 | 9 | 0 | 9 |
+| 11.5 | 9 | 5 | 14 |
+| 12.9 | 12 | 5 | 17 |
+| 15.3 | 12 | 5 | 17 |
+| 15.6 | 12 | 5 | 17 |
+| 15.8 | 12 | 5 | 17 |
+| 19.8 | 12 | 5 | 17 |
+| 20.6 | 12 | 5 | 17 |
+| 21.2 | 12 | 5 | 17 |
+| 21.3 | 12 | 5 | 17 |
+| 21.7 | 12 | 5 | 17 |
+| 21.9 | 12 | 5 | 17 |
+| 22.3 | 12 | 5 | 17 |
+| 23.1 | 12 | 5 | 17 |
+| 24.0 | 12 | 5 | 17 |
+| 24.8 | 12 | 5 | 17 |
+| 25.8 | 12 | 5 | 17 |
+| 25.9 | 12 | 5 | 17 |
+| 26.4 | 12 | 5 | 17 |
+| 27.8 | 12 | 5 | 17 |
+| 30.1 | 12 | 5 | 17 |
+| 30.1 | 12 | 5 | 17 |

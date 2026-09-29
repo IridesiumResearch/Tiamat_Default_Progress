@@ -136,7 +136,7 @@ fn main() {
             let (_, step) = steps.next().unwrap();
             match step {
                 Say(text) => r.say(text),
-                Move(x, y, z) => r.moved(PLAYER, (x, y, z), None),
+                Move(x, y, z) => r.moved(PLAYER, (x, y, z), Some((x, y + 1, z))),
                 Study(id) => r.say(&format!("c make {MOD}:{id}")),
             }
         }
@@ -192,9 +192,13 @@ fn main() {
          them by `progress sources`, and logged by the server as a line\n  \
          `tiamat_default_progress: pacing t=<tick> player=<id> source=<source>\n  \
          delta=<n> total=<n>` while `pacing_log` is on. A playtest's log is\n  \
-         the table below with real minutes in it. The engine's `bot` cannot\n  \
-         play Craft's loop yet — it has no use, no dialog and no chat to read\n  \
-         (engine ask 4) — so for now the measurement is a person playing.\n"
+         the table below with real minutes in it.\n\
+         - **The pacing bot** measures the exploring half for real:\n  \
+         `python tools/pacing/run.py --minutes N` walks the engine's `bot`\n  \
+         across a fresh world on a real server with the default mods, and\n  \
+         writes \"Measured: walking\" at the end of this file. Craft's loop\n  \
+         wants blocks placed by numeric id, which a bot script cannot look up\n  \
+         by name, so that half is a person's session for now.\n"
     );
     let _ = writeln!(out, "## The model\n");
     let _ = write!(out, "| Minute |");

@@ -126,7 +126,11 @@ All are namespaced `tiamat_default_progress:` by the engine.
 
 Chat words, said by a player and swallowed. `progress` (or `/progress`),
 for anyone: insight, path and nodes known; `progress sources`, for anyone:
-where their insight came from and went, per source. For operators: `progress grant
+where their insight came from and went, per source; `progress where`, for
+anyone: `at <x> <y> <z> t=<clock>`, the block their feet were last in and
+the clock the ledger is timed by (the pacing bot finds its feet with it).
+Each answers as the chat hook's refusal reason, so the engine says it to
+the speaker alone. For operators: `progress grant
 <node>`, `progress insight <n>`, `progress path <id|none>`, `progress reset`.
 A sentence that only begins with the word is chat.
 

@@ -980,8 +980,16 @@ impl Rig {
         self.assert_healthy("leave");
     }
 
+    /// A player says `text`. A refusal's reason reaches the speaker as a
+    /// line of chat, as the server delivers it — which is how a chat
+    /// command's reply arrives. (A bare refusal's "a mod refused that
+    /// message" is left out: the stand-ins answer with `chat_to` and then
+    /// refuse, and that line is the engine's, not anything under test.)
     pub fn say_as(&mut self, player: [u8; 32], text: &str) {
-        self.vm.chat(&ChatEvent { player, text: text.into() });
+        let out = self.vm.chat(&ChatEvent { player, text: text.into() });
+        if let (false, Some(line)) = (out.allowed, out.reason.clone()) {
+            self.huds.chat.lock().unwrap().push((player, line));
+        }
         self.assert_healthy(text);
     }
 
@@ -1064,7 +1072,7 @@ impl Rig {
             player,
             mod_id: MOD.into(),
             form: format!("{MOD}:{form}"),
-            event: proto::DialogEvent::Pressed { name: name.into() },
+            event: proto::DialogEvent::Pressed { name: name.into(), click: proto::Press::Left },
         });
         self.assert_healthy("a press");
     }

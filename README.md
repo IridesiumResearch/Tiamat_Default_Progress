@@ -36,7 +36,7 @@ Built in the brief's order (§12):
 | 5 | The research table and the studies, through Craft's registry | **done** |
 | 6 | The Research tab (or dialog), discoveries, studies, the HUD | **done** |
 | 7 | The Fork: paths, the Keystone, doors, the lock, repath, modes (`0.1.0`) | **done** |
-| 8 | `shared_gates` wiring; the pacing bot and `docs/pacing.md` (`0.2.0`) | gates, the pacing ledger and model **done**; the bot waits on engine ask 4, the tuning on a real session |
+| 8 | `shared_gates` wiring; the pacing bot and `docs/pacing.md` (`0.2.0`) | gates, the ledger, the model and the walking bot **done**; the tuning waits on a real session of Craft's loop |
 
 Today a player earns insight from the first time their feet reach each of
 the world's biomes and each depth band under the ground, from Craft's firsts (their first
@@ -74,6 +74,7 @@ mods/tiamat_default_progress/
   exports.lua       what other mods may call
   hud.lua           the client's HUD script: insight, and what just earned some
   textures/         placeholders, drawn by tools/make_textures.py
+tools/pacing/       the pacing bot (walk.lua) and its runner (run.py)
 tests/native/       the mod in the engine's real VM, with stand-ins around it; the pacing model
 docs/               the brief, the exports, the pacing, and the asks of the engine and the siblings
 ```
@@ -93,6 +94,14 @@ The pacing model — one player's first three hours, played through the mod
 cargo run --manifest-path tests/native/Cargo.toml --bin pacing
 ```
 
+The pacing bot walks a fresh world on a real server with the default mods
+and writes what exploring paid into `docs/pacing.md` (it needs the engine's
+`server` and `bot` built):
+
+```sh
+python tools/pacing/run.py --minutes 30
+```
+
 The native check runs the mod through the engine's real VM with a fake
 server around it, stand-ins for the world, Craft and the interface, and
 fixture mods for the two paths. It needs the engine checked out beside this
@@ -103,8 +112,10 @@ cargo run --manifest-path tests/native/Cargo.toml
 ```
 
 In a world: `progress` in chat says where you stand, and `progress sources`
-where your insight came from; G (or the interface's Research tab) shows the
-tree. Operators have `progress grant <node>`,
+where your insight came from. The tree, your insight and your discoveries
+are the Research tab of the inventory, and G opens the inventory on it;
+insight shows on the HUD only for the moment it is earned. Operators have
+`progress grant <node>`,
 `progress insight <n>`, `progress path <id|none>` and `progress reset`.
 
 ## Your editor
