@@ -1028,6 +1028,20 @@ impl Rig {
         self.inventory.held.lock().unwrap().insert(player, (material, None));
     }
 
+    /// Puts a carving of two materials in the player's hand: `count` items,
+    /// the first `a` cells of `first`, the next `b` of `second`, the rest air.
+    pub fn hold_mixed(&self, player: [u8; 32], first: &str, a: usize, second: &str, b: usize, count: u32) {
+        let mut cells = tiamat_core::block::EMPTY_CELLS;
+        for (i, cell) in cells.iter_mut().enumerate().take(a + b) {
+            *cell = self.material(if i < a { first } else { second });
+        }
+        let stack = Stack::mixed(&cells, count).expect("a cut of several");
+        assert!(stack.cells.is_some(), "two materials make a cut of several");
+        let lowest = stack.material;
+        self.inventory.put(player, stack);
+        self.inventory.held.lock().unwrap().insert(player, (lowest, None));
+    }
+
     pub fn units(&self, player: [u8; 32], id: &str) -> u32 {
         self.inventory.units_of(player, self.material(id))
     }

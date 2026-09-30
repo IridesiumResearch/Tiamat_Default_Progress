@@ -139,7 +139,10 @@ function R.study_shape(uuid)
     local n = 0
     for _ in pairs(record.shapes) do n = n + 1 end
     if n >= C.shape_cap then return nil, "you have learned all the shapes can teach" end
-    local took = game.take(uuid, { material = held.material, count = 1, shape = mask, detail = held.detail })
+    -- A carving of several materials is named by its `cells` too; a take
+    -- without them never touches one (engine 0.3.0).
+    local took = game.take(uuid, { material = held.material, count = 1, shape = mask, detail = held.detail,
+        cells = held.cells })
     if took <= 0 then return nil, "the carving moved" end
     S.set_shape(uuid, key)
     I.award(uuid, C.shape_insight, "A shape of " .. U.cells(mask) .. " cells", "shape")

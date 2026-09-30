@@ -216,6 +216,12 @@ fn research() {
     assert!(r.last_dialog().unwrap().1.contains("you have studied that shape already"));
     assert_eq!(r.ask("progress"), "Insight 101. Path: none yet. Nodes known: 0.");
     assert_eq!(r.ask("progress sources"), "Insight by source: shape +8, study +93.");
+
+    // A carving of two materials (engine 0.3.0) is a shape like any other.
+    r.hold_mixed(PLAYER, "tiamat_default_world:stone", 3, "tiamat_default_world:crystal", 3, 1);
+    r.press(PLAYER, "research", "shape");
+    assert!(r.last_dialog().unwrap().1.contains("The shape is understood."), "a mixed carving is studied");
+    assert_eq!(r.ask("progress sources"), "Insight by source: shape +16, study +93.");
     println!("research: ok");
 }
 
