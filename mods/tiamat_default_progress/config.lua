@@ -178,7 +178,7 @@ C.shared = {
       text = "A log gives a third more charcoal.",
       effects = { { "craft.charcoal_yield", 3 } } },
     { id = "shared.kiln_lore", tier = 1, cost = 20, requires = { "shared.charcoal_clamp" }, label = "Kiln lore",
-      text = "Fuel in a kiln lasts a quarter as long again.",
+      text = "Fuel lasts a quarter as long again in any heat station you light: a kiln, a bloomery, and the rest.",
       effects = { { "craft.fuel_percent", 25 } } },
     { id = "shared.placer_eye", tier = 1, cost = 20, label = "A placer eye",
       text = "The sluice turns up a gold flake every sixth wash, not every ninth.",
