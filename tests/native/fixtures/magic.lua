@@ -26,7 +26,9 @@ assert(p.register_path("nonsense") == nil)
 assert(p.register_node{ id = "magic.attune", tier = 3, requires = { "shared.fork" }, label = "Attunement",
     branch = "FIRE", effects = { { "magic.mana_max", 10 }, { "progress.study_percent", 20 } } } == true)
 assert(p.register_node{ id = "magic.focus", tier = 4, requires = "magic.attune", cost = 150, branch = "MENS",
-    label = "The Focus" } == true)
+    label = "The Focus", icon = game.content_hash("textures/keystone.png") } == true)
+assert(p.register_node{ id = "magic.odd", tier = 3, requires = "shared.fork", icon = "icons/focus.png" } == nil,
+    "an icon is a hash, not a path")
 -- Two steps past what is held: out of sight until Attunement is.
 assert(p.register_node{ id = "magic.deep", tier = 5, requires = { "magic.attune", "magic.focus" }, branch = "MENS",
     label = "The Deep" } == true)

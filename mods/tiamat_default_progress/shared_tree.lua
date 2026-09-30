@@ -24,6 +24,13 @@ local I = tdp.insight
 local K = tdp.craft
 
 for _, spec in ipairs(C.shared) do
+    -- A shared node's `icon` in config.lua is a file in this mod's
+    -- directory; the graph wants its content hash.
+    if type(spec.icon) == "string" and not string.match(spec.icon, "^%x+$") then
+        local ok, hash = pcall(game.content_hash, spec.icon)
+        if not ok then error("shared node " .. spec.id .. ": icon " .. spec.icon .. ": " .. tostring(hash)) end
+        spec.icon = hash
+    end
     local ok, why = N.register(spec, game.mod_id)
     if not ok then error("shared node " .. tostring(spec.id) .. ": " .. why) end
 end

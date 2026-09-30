@@ -365,6 +365,8 @@ fn one_door() {
     // things not held, so it waits.
     assert!(tree.contains("The Fire") && tree.contains("Menstrua") && tree.contains("The Focus"), "{tree}");
     assert!(!tree.contains("The Deep") && tree.contains("1 more, not yet in sight."), "{tree}");
+    // The Focus has a picture in its frame; nothing else does.
+    assert_eq!(tree.matches("Image").count(), 1, "one node, one picture: {tree}");
     println!("one door: ok");
 }
 

@@ -57,9 +57,9 @@ local ROW = 28
 -- without the interface, which draws them in the client's own face.
 local DISPLAY = ui and type(ui.theme) == "table" and type(ui.theme.font) == "string" and ui.theme.font or nil
 
--- A node tile: a square frame for its picture (none are drawn yet; the
--- frame is where one goes), its name under it, and everything else — what
--- it costs, what it does, what it needs — on hover.
+-- A node tile: its picture in a square frame (the node's `icon`; an empty
+-- frame for a node without one), its name under it, and everything else —
+-- what it costs, what it does, what it needs — on hover.
 local TILE_W, TILE_H, PICTURE, TILE_GAP = 80, 98, 44, 8
 
 -- Builders --------------------------------------------------------------------------
@@ -143,6 +143,15 @@ local TILE = {
     locked = { background = { 30, 28, 26, 255 }, border = { 70, 66, 60, 255 } },
 }
 
+--- A content hash as the 32 bytes of the older spelling. The engine takes
+--- the hex too, but the interface copies a tab's `hash` only as a list, so
+--- this is the spelling that reaches the screen either way.
+local function hash_bytes(hex)
+    local out = {}
+    for i = 1, 64, 2 do out[#out + 1] = tonumber(string.sub(hex, i, i + 1), 16) end
+    return out
+end
+
 local function node_tile(uuid, node, dimmed)
     local known = N.has(uuid, node.id)
     local ready = not known and not dimmed and N.can(uuid, node.id)
@@ -154,9 +163,10 @@ local function node_tile(uuid, node, dimmed)
         size = TILE_W, cross_size = TILE_H, tooltip = tip,
         style = { background = look.background, border = look.border },
         children = {
-            -- Where the node's picture will go.
-            { type = "container", size = PICTURE, cross_size = PICTURE, tooltip = tip,
-              style = { border = look.border } },
+            -- The node's picture, framed; an empty frame for a node without one.
+            { type = "container", size = PICTURE, cross_size = PICTURE, padding = 2, tooltip = tip,
+              style = { border = look.border },
+              children = node.icon and { { type = "image", hash = hash_bytes(node.icon), grow = 1 } } or nil },
             { type = "button", name = "node:" .. node.id, text = node.label, grow = 1, tooltip = tip,
               style = { text_colour = colour, text_size = 11 } },
         },

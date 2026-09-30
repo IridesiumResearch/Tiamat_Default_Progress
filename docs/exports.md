@@ -47,10 +47,10 @@ in hex, as every hook event reports it.
 
 | Field | Shape | What it does |
 |---|---|---|
-| `register_node(spec)` | `{ id, tier, cost?, requires?, label?, text?, effects?, branch?, reveal?, on_unlock? }` | A node. `id` is `<path>.<name>`, the path `shared` or one registered with `register_path`. `tier` 0..7; `cost` in insight, the tier's default when left out (0, 20, 50, 100, 200, 400, 800, 1500). `requires` a node id or a list of up to 8. `effects` up to 8 `{ "mod.key", whole number }`. `on_unlock(uuid)` runs in your sandbox when a player gains it. `branch` (up to 32 bytes) is the group the Research tab shows it under within its tier, in the order your nodes were registered; `reveal` is `"always"` or `"near"` — shown only once all but one of its `requires` are held — and when left out the path's `reveal` decides. |
+| `register_node(spec)` | `{ id, tier, cost?, requires?, label?, text?, effects?, branch?, reveal?, icon?, on_unlock? }` | A node. `id` is `<path>.<name>`, the path `shared` or one registered with `register_path`. `tier` 0..7; `cost` in insight, the tier's default when left out (0, 20, 50, 100, 200, 400, 800, 1500). `requires` a node id or a list of up to 8. `effects` up to 8 `{ "mod.key", whole number }`. `on_unlock(uuid)` runs in your sandbox when a player gains it. `branch` (up to 32 bytes) is the group the Research tab shows it under within its tier, in the order your nodes were registered; `reveal` is `"always"` or `"near"` — shown only once all but one of its `requires` are held — and when left out the path's `reveal` decides. `icon` is the node's picture on its Research tile: the content hash, 64 hex characters, that `game.content_hash("icons/athanor.png")` answers for a file in YOUR mod's directory (a PNG or JPEG; square, shown about 40 pixels across). A node without one has an empty frame. |
 | `unlock(uuid, node)` | | Spends the player's insight on a node: `true`, or `nil` and why. Nothing is taken unless it is learned. |
 | `can_unlock(uuid, node)` | | Whether they could, now: `true`, or `nil` and why. |
-| `nodes()` | | Every usable node, by tier, as `{ id, path, tier, cost, requires, label, text, effects, branch, reveal }`. |
+| `nodes()` | | Every usable node, by tier, as `{ id, path, tier, cost, requires, label, text, effects, branch, reveal, icon }`. |
 
 **The graph is validated once, when mods have finished loading** — so a
 node may require one a mod loading after it registers. A node that requires

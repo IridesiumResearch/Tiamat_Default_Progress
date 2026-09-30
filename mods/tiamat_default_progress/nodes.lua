@@ -85,6 +85,9 @@ function N.register(spec, owner)
     if spec.branch ~= nil and (type(spec.branch) ~= "string" or #spec.branch == 0 or #spec.branch > 32) then
         return nil, "branch is a short name: \"FIRE\""
     end
+    if spec.icon ~= nil and (type(spec.icon) ~= "string" or #spec.icon ~= 64 or not string.match(spec.icon, "^%x+$")) then
+        return nil, "icon is a picture's content hash, 64 hex characters: game.content_hash(\"icons/x.png\")"
+    end
     if spec.reveal ~= nil and not REVEALS[spec.reveal] then
         return nil, "reveal is \"always\" or \"near\""
     end
@@ -105,6 +108,7 @@ function N.register(spec, owner)
         auto = spec.auto == true,
         branch = spec.branch,
         reveal = spec.reveal,
+        icon = spec.icon and string.lower(spec.icon),
         owner = owner,
     }
     order[#order + 1] = id

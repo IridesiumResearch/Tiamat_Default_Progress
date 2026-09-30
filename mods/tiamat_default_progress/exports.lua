@@ -46,7 +46,7 @@ local function public_node(node)
     return {
         id = node.id, path = node.path, tier = node.tier, cost = node.cost,
         requires = requires, label = node.label, text = node.text, effects = effects,
-        branch = node.branch, reveal = node.reveal,
+        branch = node.branch, reveal = node.reveal, icon = node.icon,
     }
 end
 
@@ -118,7 +118,7 @@ return {
     -- The graph ------------------------------------------------------------------
 
     --- `{ id, tier, cost?, requires?, label?, text?, effects?, branch?,
-    --- reveal?, on_unlock? }`, while mods load. `id` is `<path>.<name>`.
+    --- reveal?, icon?, on_unlock? }`, while mods load. `id` is `<path>.<name>`.
     register_node = safe("register_node", function(spec) return N.register(spec) end),
 
     --- Spends a player's insight on a node: `true`, or `nil` and why.

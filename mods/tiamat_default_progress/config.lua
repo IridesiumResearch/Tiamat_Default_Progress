@@ -163,6 +163,9 @@ C.shape_cap = 20
 
 -- The shared tree (shared_tree.lua) -----------------------------------------------
 --
+-- A node may carry `icon = "icons/<name>.png"`, a picture in this mod's
+-- directory for its tile on the Research tab; none are drawn yet.
+--
 -- Shared nodes REFINE: a player with no insight can still make bronze. What
 -- a node does is `effects`, integer deltas read live by the mod that owns
 -- the number (Craft, through `effects_of`); nothing about an effect is ever

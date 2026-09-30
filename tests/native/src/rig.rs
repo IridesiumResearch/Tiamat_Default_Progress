@@ -24,7 +24,7 @@ use tiamat_core::{
     fluid::{self, Fluid, FluidId},
     hud::{self, Values},
     identity::PlayerUuid,
-    inventory::{self, Shape, Stack, stack_capacity},
+    inventory::{self, Shape, Stack, StackKey, stack_capacity},
     light::{Light, LightSource},
     particle::{self, BadgeRequest, EmitRequest},
     phys::Abilities,
@@ -165,16 +165,14 @@ impl inventory::Access for Inventory {
         player: [u8; 32],
         view: &str,
         _slot: Option<usize>,
-        material: MaterialId,
-        shape: Option<Shape>,
-        detail: Option<&str>,
+        which: StackKey<'_>,
         units: u32,
     ) -> u32 {
         let mut views = self.views.lock().unwrap();
         let Some(list) = views.get_mut(&(player, view.to_owned())) else { return 0 };
         let mut got = 0;
         for stack in list.iter_mut() {
-            if same(stack, material, shape, detail) {
+            if which.matches(stack) {
                 let take = units.saturating_sub(got).min(stack.units);
                 stack.units -= take;
                 got += take;
@@ -284,9 +282,7 @@ impl inventory::Containers for Boxes {
         &self,
         name: &str,
         slot: Option<usize>,
-        material: MaterialId,
-        shape: Option<Shape>,
-        detail: Option<&str>,
+        which: StackKey<'_>,
         units: u32,
     ) -> u32 {
         let mut all = self.slots.lock().unwrap();
@@ -301,7 +297,7 @@ impl inventory::Containers for Boxes {
         let mut got = 0;
         for i in indices {
             if let Some(stack) = &mut list[i]
-                && same(stack, material, shape, detail)
+                && which.matches(stack)
             {
                 let take = units.saturating_sub(got).min(stack.units);
                 stack.units -= take;
