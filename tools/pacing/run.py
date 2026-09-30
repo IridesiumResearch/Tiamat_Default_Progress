@@ -7,8 +7,8 @@ Starts a throwaway server on loopback with the engine checkout's mods
 world, runs `tools/pacing/walk.lua` through the engine's `bot` for as many
 minutes of the server's clock as asked, stops the server, and writes what
 the bot's `progress sources` said, leg by leg, into docs/pacing.md under
-"Measured: walking". The server's own `pacing` log lines are kept beside it
-in the scratch directory.
+"Measured: walking". The server's own `pacing` log lines are kept in the
+scratch directory; the world generated there is deleted when the run ends.
 
 Build the engine's `server` and `bot` first (`cargo build -p server -p bot`
 in the engine). Run from the repository root:
@@ -17,6 +17,7 @@ in the engine). Run from the repository root:
 """
 import argparse
 import re
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -98,6 +99,9 @@ def main():
         proc.terminate()
         proc.wait(timeout=60)
         log.close()
+        # The world is a hundred megabytes of terrain nobody will open again;
+        # the logs beside it are what a run leaves behind.
+        shutil.rmtree(scratch / "world", ignore_errors=True)
 
     (scratch / "bot.log").write_text(run.stdout + run.stderr, encoding="utf-8")
     rows = []
