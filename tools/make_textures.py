@@ -5,14 +5,17 @@
 A flat colour for a block, the Spindle's convention: variation across a
 surface is the renderer's, never baked into the picture. An item is flat
 colours in one silhouette on a clear ground, so it reads in a slot. Every
-picture here is meant to be replaced.
+picture here was meant to be replaced, and the keystone and the research
+table have been: drawn by hand (2026-09-30). A picture that exists is kept;
+`--force` replaces it with the placeholder.
 
 No dependencies beyond the standard library, and no randomness: the same
 bytes on every machine. Run from the repository root:
 
-    python tools/make_textures.py
+    python tools/make_textures.py [--force]
 """
 import struct
+import sys
 import zlib
 from pathlib import Path
 
@@ -92,9 +95,14 @@ def keystone():
 
 
 def main():
+    force = "--force" in sys.argv[1:]
     OUT.mkdir(parents=True, exist_ok=True)
     for name, make in (("research_table", research_table), ("keystone", keystone)):
-        (OUT / f"{name}.png").write_bytes(png(make().p))
+        target = OUT / f"{name}.png"
+        if target.exists() and not force:
+            print(f"kept {name}.png (it is somebody's art; --force to replace it)")
+            continue
+        target.write_bytes(png(make().p))
         print(f"wrote {name}.png")
 
 
