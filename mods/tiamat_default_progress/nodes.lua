@@ -35,6 +35,11 @@ local validated = false
 
 local creative = C.mode == "Creative"
 
+-- When a node shows on the Research tab: `always`, or `near` — only once
+-- all but one of its requirements are held, so a path of a hundred nodes
+-- shows its frontier and the step past it, not the whole map at once.
+local REVEALS = { always = true, near = true }
+
 --- Registers a node. Answers `true`, or `nil` and why.
 function N.register(spec, owner)
     if not tdp.loading() then return nil, "nodes are registered while mods load" end
@@ -77,6 +82,12 @@ function N.register(spec, owner)
             effects[i] = { key, n }
         end
     end
+    if spec.branch ~= nil and (type(spec.branch) ~= "string" or #spec.branch == 0 or #spec.branch > 32) then
+        return nil, "branch is a short name: \"FIRE\""
+    end
+    if spec.reveal ~= nil and not REVEALS[spec.reveal] then
+        return nil, "reveal is \"always\" or \"near\""
+    end
     if spec.on_unlock ~= nil and type(spec.on_unlock) ~= "function" then
         return nil, "on_unlock is a function"
     end
@@ -92,6 +103,8 @@ function N.register(spec, owner)
         effects = effects,
         on_unlock = spec.on_unlock,
         auto = spec.auto == true,
+        branch = spec.branch,
+        reveal = spec.reveal,
         owner = owner,
     }
     order[#order + 1] = id
@@ -232,6 +245,23 @@ function N.has(uuid, id)
     end
     if record.path ~= node.path then return false end
     return record.nodes[id] == true
+end
+
+--- Whether a node shows to a player on the Research tab. A node held always
+--- does; otherwise its own `reveal`, or its path's, decides: `near` wants all
+--- but one of its requirements held.
+function N.visible(uuid, id)
+    local node = nodes[id]
+    if node == nil or node.broken then return false end
+    if N.has(uuid, id) then return true end
+    local path = tdp.fork and tdp.fork.paths[node.path]
+    local rule = node.reveal or (path and path.reveal) or "always"
+    if rule ~= "near" then return true end
+    local held = 0
+    for _, r in ipairs(node.requires) do
+        if N.has(uuid, r) then held = held + 1 end
+    end
+    return held >= #node.requires - 1
 end
 
 --- Whether a player could unlock a node now: `true`, or `nil` and why.

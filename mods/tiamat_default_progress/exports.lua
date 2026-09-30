@@ -46,6 +46,7 @@ local function public_node(node)
     return {
         id = node.id, path = node.path, tier = node.tier, cost = node.cost,
         requires = requires, label = node.label, text = node.text, effects = effects,
+        branch = node.branch, reveal = node.reveal,
     }
 end
 
@@ -116,8 +117,8 @@ return {
 
     -- The graph ------------------------------------------------------------------
 
-    --- `{ id, tier, cost?, requires?, label?, text?, effects?, on_unlock? }`,
-    --- while mods load. `id` is `<path>.<name>`.
+    --- `{ id, tier, cost?, requires?, label?, text?, effects?, branch?,
+    --- reveal?, on_unlock? }`, while mods load. `id` is `<path>.<name>`.
     register_node = safe("register_node", function(spec) return N.register(spec) end),
 
     --- Spends a player's insight on a node: `true`, or `nil` and why.
@@ -141,8 +142,8 @@ return {
 
     -- The Fork -------------------------------------------------------------------
 
-    --- `{ id, label?, door, recipe?, sentence?, refusal?, on_choose? }`, while
-    --- mods load.
+    --- `{ id, label?, door, recipe?, sentence?, refusal?, on_choose?,
+    --- branches?, reveal? }`, while mods load.
     register_path = safe("register_path", function(spec) return F.register_path(spec) end),
 
     --- Every path, as `{ id, label, door }`.

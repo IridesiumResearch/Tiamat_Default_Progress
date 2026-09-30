@@ -14,6 +14,8 @@ assert(p.register_path{
     id = "magic", label = "The Attuned", door = "schism_magic:attunement_stone",
     recipe = { inputs = { { "tiamat_default_craft:silver_ingot", count = 4 } } },
     on_choose = function(uuid) chosen[#chosen + 1] = uuid end,
+    branches = { FIRE = "The Fire", MENS = "Menstrua" },
+    reveal = "near",
 } == true)
 -- Refused, not raised.
 assert(p.register_path{ id = "magic", door = "schism_magic:attunement_stone" } == nil, "twice")
@@ -22,8 +24,14 @@ assert(p.register_path{ id = "odd", door = "not qualified" } == nil, "a door is 
 assert(p.register_path("nonsense") == nil)
 
 assert(p.register_node{ id = "magic.attune", tier = 3, requires = { "shared.fork" }, label = "Attunement",
-    effects = { { "magic.mana_max", 10 } } } == true)
-assert(p.register_node{ id = "magic.focus", tier = 4, requires = "magic.attune", cost = 150 } == true)
+    branch = "FIRE", effects = { { "magic.mana_max", 10 }, { "progress.study_percent", 20 } } } == true)
+assert(p.register_node{ id = "magic.focus", tier = 4, requires = "magic.attune", cost = 150, branch = "MENS",
+    label = "The Focus" } == true)
+-- Two steps past what is held: out of sight until Attunement is.
+assert(p.register_node{ id = "magic.deep", tier = 5, requires = { "magic.attune", "magic.focus" }, branch = "MENS",
+    label = "The Deep" } == true)
+assert(p.register_node{ id = "magic.odd", tier = 3, requires = "shared.fork", branch = "" } == nil, "a branch is named")
+assert(p.register_node{ id = "magic.odd", tier = 3, requires = "shared.fork", reveal = "sometimes" } == nil)
 -- Each of these is registered, and disabled when the graph is validated.
 assert(p.register_node{ id = "magic.stray", tier = 3 } == true)
 assert(p.register_node{ id = "magic.loop_a", tier = 3, requires = { "shared.fork", "magic.loop_b" } } == true)

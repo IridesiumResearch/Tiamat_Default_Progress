@@ -174,6 +174,49 @@ end
 
 local TIER_MARK = { [0] = "I", "II", "III", "IV", "V", "VI", "VII", "VIII" }
 
+--- A branch's name under a tier: smaller still than the tier's mark.
+local function branch_mark(text)
+    return centred({ { type = "label", text = text,
+        style = { font = DISPLAY, text_size = 11, text_colour = DIM } } }, 14)
+end
+
+--- A path's nodes: by tier, and within a tier by branch in the order the
+--- path registered them, each branch under its name. Only the nodes the
+--- player can see (`N.visible`: a path may reveal a node only once all but
+--- one of its requirements are held), and a count of the rest.
+local function path_section(uuid, path, own, dimmed, body)
+    local hidden = 0
+    for tier = 0, C.max_tier do
+        local shown, order, by_branch = 0, {}, {}
+        for _, node in ipairs(own) do
+            if node.tier == tier then
+                if N.visible(uuid, node.id) then
+                    local key = node.branch or ""
+                    if not by_branch[key] then
+                        by_branch[key] = {}
+                        order[#order + 1] = key
+                    end
+                    local list = by_branch[key]
+                    list[#list + 1] = node
+                    shown = shown + 1
+                else
+                    hidden = hidden + 1
+                end
+            end
+        end
+        if shown > 0 then
+            body[#body + 1] = heading("Tier " .. TIER_MARK[tier])
+            for _, key in ipairs(order) do
+                if key ~= "" then body[#body + 1] = branch_mark(path.branches[key] or key) end
+                tile_rows(uuid, by_branch[key], dimmed, body)
+            end
+        end
+    end
+    if hidden > 0 then
+        body[#body + 1] = centred({ label(string.format("%d more, not yet in sight.", hidden), DIM, 12) }, 18)
+    end
+end
+
 local function tree_view(uuid)
     local body = {}
     local nodes = N.list()
@@ -205,7 +248,7 @@ local function tree_view(uuid)
             if #own == 0 then
                 body[#body + 1] = centred({ label("Nothing is written here yet.", DIM) }, 22)
             end
-            tile_rows(uuid, own, mine == nil, body)
+            path_section(uuid, path, own, mine == nil, body)
         end
     end
     return body

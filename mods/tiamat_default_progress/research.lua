@@ -23,6 +23,7 @@ local U = tdp.util
 local S = tdp.store
 local I = tdp.insight
 local K = tdp.craft
+local N = tdp.nodes
 
 local R = {}
 
@@ -108,7 +109,11 @@ end
 K.on_crafted(function(uuid, recipe_id)
     local study = studies[recipe_id]
     if study then
-        I.award(uuid, study.insight, study.name, "study")
+        -- Nodes may raise what studies pay (Science's Difference Engine):
+        -- `progress.study_percent`, summed over what the player holds.
+        local percent = N.effects_of(uuid, "progress.study_percent")["progress.study_percent"] or 0
+        local pay = study.insight * (100 + percent) // 100
+        if pay > 0 then I.award(uuid, pay, study.name, "study") end
     end
 end)
 

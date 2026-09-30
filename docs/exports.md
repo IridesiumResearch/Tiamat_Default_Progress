@@ -47,10 +47,10 @@ in hex, as every hook event reports it.
 
 | Field | Shape | What it does |
 |---|---|---|
-| `register_node(spec)` | `{ id, tier, cost?, requires?, label?, text?, effects?, on_unlock? }` | A node. `id` is `<path>.<name>`, the path `shared` or one registered with `register_path`. `tier` 0..7; `cost` in insight, the tier's default when left out (0, 20, 50, 100, 200, 400, 800, 1500). `requires` a node id or a list of up to 8. `effects` up to 8 `{ "mod.key", whole number }`. `on_unlock(uuid)` runs in your sandbox when a player gains it. |
+| `register_node(spec)` | `{ id, tier, cost?, requires?, label?, text?, effects?, branch?, reveal?, on_unlock? }` | A node. `id` is `<path>.<name>`, the path `shared` or one registered with `register_path`. `tier` 0..7; `cost` in insight, the tier's default when left out (0, 20, 50, 100, 200, 400, 800, 1500). `requires` a node id or a list of up to 8. `effects` up to 8 `{ "mod.key", whole number }`. `on_unlock(uuid)` runs in your sandbox when a player gains it. `branch` (up to 32 bytes) is the group the Research tab shows it under within its tier, in the order your nodes were registered; `reveal` is `"always"` or `"near"` — shown only once all but one of its `requires` are held — and when left out the path's `reveal` decides. |
 | `unlock(uuid, node)` | | Spends the player's insight on a node: `true`, or `nil` and why. Nothing is taken unless it is learned. |
 | `can_unlock(uuid, node)` | | Whether they could, now: `true`, or `nil` and why. |
-| `nodes()` | | Every usable node, by tier, as `{ id, path, tier, cost, requires, label, text, effects }`. |
+| `nodes()` | | Every usable node, by tier, as `{ id, path, tier, cost, requires, label, text, effects, branch, reveal }`. |
 
 **The graph is validated once, when mods have finished loading** — so a
 node may require one a mod loading after it registers. A node that requires
@@ -64,7 +64,7 @@ and not the registering mod's other nodes.
 
 | Field | Shape | What it does |
 |---|---|---|
-| `register_path(spec)` | `{ id, label?, door, recipe?, sentence?, refusal?, on_choose? }` | A path. `id` is a word (`"magic"`); `door` is your block, which a player uses (the place control, nothing in hand) to choose; `recipe = { inputs = { ... } }` makes the door at the workbench, with the Keystone added and `shared.keystone` required; `sentence` is the confirmation's line (default "This binds you. The other door closes."); `refusal` what the door says to a player of the other path; `on_choose(uuid)` runs in your sandbox when a player chooses you (magic sets its mana there). |
+| `register_path(spec)` | `{ id, label?, door, recipe?, sentence?, refusal?, on_choose?, branches?, reveal? }` | A path. `id` is a word (`"magic"`); `door` is your block, which a player uses (the place control, nothing in hand) to choose; `recipe = { inputs = { ... } }` makes the door at the workbench, with the Keystone added and `shared.keystone` required; `sentence` is the confirmation's line (default "This binds you. The other door closes."); `refusal` what the door says to a player of the other path; `on_choose(uuid)` runs in your sandbox when a player chooses you (magic sets its mana there). `branches = { FIRE = "The Fire" }` names your nodes' branch codes on the Research tab (a code with no name is shown as itself); `reveal` is the default for your nodes, `"always"` (the default) or `"near"`. |
 | `paths()` | | Every path, as `{ id, label, door }`. |
 
 A door offers its path to a player who holds `shared.keystone` and has no
@@ -106,6 +106,9 @@ All are namespaced `tiamat_default_progress:` by the engine.
   `craft.mould_pours`, `craft.uses_percent.wood`, `.bronze` and `.iron`,
   `craft.smelt_ore_units`, `craft.bloom_ticks`, `craft.anvil_strikes` and
   `craft.chisel_wear_percent`, each an integer delta on Craft's own number.
+- **Effect keys this mod reads:** `progress.study_percent`, summed over
+  every node a player holds, raises what each study pays by that many per
+  cent (rounded down). Science's Difference Engine is the first to use it.
 - **Discoveries:** `make.*` (twelve firsts of making), `station.*` (seven
   first stations), `depth.60` … `depth.2000`, and the family `biome:*`;
   with Life, the families `kill:*` (a creature's short id) and `eat:*` (a

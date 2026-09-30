@@ -90,8 +90,8 @@ fn graph() {
     r.join(PLAYER);
     r.tick(1);
     let nodes = r.ask("m nodes");
-    assert!(nodes.starts_with("16 shared.firecraft shared.fire_setting"), "{nodes}");
-    assert!(nodes.ends_with("shared.fork magic.attune tech.steam magic.focus"), "{nodes}");
+    assert!(nodes.starts_with("17 shared.firecraft shared.fire_setting"), "{nodes}");
+    assert!(nodes.ends_with("shared.fork magic.attune tech.steam magic.focus magic.deep"), "{nodes}");
     for bad in ["magic.stray", "magic.loop_a", "magic.loop_b", "magic.after_loop", "magic.dangling", "shared.leans", "ghost.node"] {
         assert!(!nodes.contains(bad), "{bad} is disabled");
         assert_eq!(r.ask(&format!("m has {bad}")), "false");
@@ -313,6 +313,11 @@ fn fork() {
     r.say("progress insight 300");
     assert_eq!(r.ask("m unlock magic.attune"), "true nil");
     assert_eq!(r.ask("m effects magic."), "magic.mana_max=10");
+    let before = r.ask("progress");
+    assert_eq!(r.ask("c make tiamat_default_progress:study_copper"), "made");
+    let after = r.ask("progress");
+    let insight = |line: &str| line.split_whitespace().nth(1).unwrap().trim_end_matches('.').parse::<i64>().unwrap();
+    assert_eq!(insight(&after) - insight(&before), 12, "a study pays 20 per cent more with the node that says so");
     assert_eq!(r.ask("m unlock tech.steam"), "nil Steam belongs to the other path");
     assert_eq!(r.ask("progress grant tech.steam"), "Steam is tech's; take that path first");
     assert!(r.use_block(PLAYER, "schism_tech:analytical_engine"));
@@ -356,6 +361,10 @@ fn one_door() {
     r.action(PLAYER, &format!("{MOD}:research"));
     let tree = r.last_dialog().unwrap().1;
     assert!(tree.contains("The Attuned") && tree.contains("The Engineers"), "both, before the choice: {tree}");
+    // A path's nodes by branch, and only those in sight: the Deep needs two
+    // things not held, so it waits.
+    assert!(tree.contains("The Fire") && tree.contains("Menstrua") && tree.contains("The Focus"), "{tree}");
+    assert!(!tree.contains("The Deep") && tree.contains("1 more, not yet in sight."), "{tree}");
     println!("one door: ok");
 }
 

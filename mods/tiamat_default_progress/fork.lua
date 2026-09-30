@@ -72,6 +72,21 @@ function F.register_path(spec)
         if spec[key] ~= nil and type(spec[key]) ~= "string" then return nil, key .. " is a string" end
     end
     if spec.on_choose ~= nil and type(spec.on_choose) ~= "function" then return nil, "on_choose is a function" end
+    if spec.reveal ~= nil and spec.reveal ~= "always" and spec.reveal ~= "near" then
+        return nil, "reveal is \"always\" or \"near\""
+    end
+    local branches = {}
+    if spec.branches ~= nil then
+        if type(spec.branches) ~= "table" then return nil, "branches is { code = \"name\" }" end
+        local n = 0
+        for code, name in pairs(spec.branches) do
+            n = n + 1
+            if n > 32 or type(code) ~= "string" or #code > 32 or type(name) ~= "string" then
+                return nil, "branches is at most 32 { code = \"name\" }"
+            end
+            branches[code] = string.sub(name, 1, 48)
+        end
+    end
     if spec.recipe ~= nil and (type(spec.recipe) ~= "table" or type(spec.recipe.inputs) ~= "table") then
         return nil, "recipe is { inputs = { ... } }"
     end
@@ -83,6 +98,8 @@ function F.register_path(spec)
         sentence = spec.sentence and string.sub(spec.sentence, 1, 200) or C.sentence,
         refusal = spec.refusal and string.sub(spec.refusal, 1, 200) or C.refusal,
         on_choose = spec.on_choose,
+        reveal = spec.reveal,
+        branches = branches,
     }
 
     if spec.recipe then

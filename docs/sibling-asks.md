@@ -77,3 +77,28 @@ dialog alike. This mod builds its own widget tables, so it needs no `tip`.
 
 The interface copies another mod's tree by FIELD, not by type, so a
 `scroll` passes; the Research tab's body is one.
+
+## Asks of this mod
+
+What the other mods have asked of Progress, and the answers. Newest first.
+
+### P-S2, a study-insight effect (Science): ANSWERED 2026-09-30
+
+Studies read the effect key `progress.study_percent`, summed over every
+node the player holds, when they pay: `insight * (100 + percent) // 100`.
+Science's Difference Engine carries its bonus as
+`science.study_bonus_percent`; under `progress.study_percent` it pays.
+
+### P-M1 and P-S1, a branch label and a reveal rule (Magic, Science): ANSWERED 2026-09-30
+
+- `register_node{ branch = "FIRE" }`: within a tier, the Research tab
+  groups a path's nodes by branch, in registration order, each group under
+  a small name.
+- `register_path{ branches = { FIRE = "The Fire" } }` names the codes.
+- `reveal = "near"` on a node, or on the path for all its nodes: shown only
+  once all but one of its requirements are held. A held node always shows.
+  The rest are counted in one line ("12 more, not yet in sight"), so a
+  hundred-node path shows its frontier and the step past it.
+- Checked against both paths as they stand: Magic's 97 and Science's 107
+  nodes validate on a real server with nothing disabled, and a tier of 15
+  to 25 tiles is rows of six, centred, in the tab's scroll.
