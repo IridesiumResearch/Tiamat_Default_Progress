@@ -137,6 +137,18 @@ C.depths = {
 -- nothing is ever put in (a study makes insight, not a thing).
 C.table_slots = { input = 1, output = 2 }
 
+-- The research table's cells, a whole block of them (research.lua): three
+-- layers, bottom first, each three rows of three, `#` filled. A top on four
+-- legs. And the model drawn in their place when the file is there; a model
+-- is in cells, three to the block, so `scale` is whatever the art needs.
+C.table_shape = {
+    "#.# ... #.#",   -- the feet
+    "#.# ... #.#",   -- the legs
+    "### ### ###",   -- the top
+}
+C.table_model = "models/research_table.glb"
+C.table_model_scale = 1.0
+
 -- The studies: what the table eats, how long it takes, what it pays. A study
 -- recipe's id is `tiamat_default_progress:<id>`.
 C.studies = {

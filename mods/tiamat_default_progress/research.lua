@@ -28,13 +28,45 @@ local N = tdp.nodes
 local R = {}
 
 R.station = game.mod_id .. ":research_table"
-R.block = game.register_block{
+
+-- The table is ONE PIECE (Sub-Node Contract §7.5): any tool takes it whole,
+-- in its own hardness, and a chisel cannot take a corner off it. Its cells
+-- are a table's — a top on four legs — for collision, light and the aim, and
+-- when `models/research_table.glb` is in this mod's directory the client
+-- draws that model in their place (§8.6).
+--
+-- `whole`, `shape` and `model` are new in the engine (its model blocks). An
+-- engine without them refuses the fields, and then the table is the plain
+-- block it always was, with a line in the log: the mod loads either way.
+local TABLE = {
     id = "research_table",
     name = "Research table",
     description = "Clay tablets on a plank bench. Put a material in and it is studied for insight.",
     hardness = 0.8,
     textures = { all = "textures/research_table.png" },
 }
+
+local function one_piece()
+    local spec = { whole = true, shape = C.table_shape }
+    for key, value in pairs(TABLE) do spec[key] = value end
+    -- A model only when its file is there: registering one that is not is
+    -- an error, which is the test.
+    if pcall(game.register_model, { id = "research_table", file = C.table_model, scale = C.table_model_scale }) then
+        spec.model = "research_table"
+    end
+    return spec
+end
+
+do
+    local ok, block = pcall(game.register_block, one_piece())
+    if ok then
+        R.block = block
+    else
+        game.log("tiamat_default_progress: this engine has no whole or model blocks ("
+            .. tostring(block) .. "); the research table is a plain block")
+        R.block = game.register_block(TABLE)
+    end
+end
 
 local studies = {}   -- recipe id -> { id, name, insight, ticks, inputs }
 local listed = {}    -- recipe ids in registration order
