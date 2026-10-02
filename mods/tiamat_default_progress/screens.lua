@@ -5,14 +5,15 @@
 -- here, a plain dialog on the `research` action (G) when it is not. One tree
 -- serves both.
 --
--- Everything centred. Three views. The TREE: insight at the top with a bar
--- toward the cheapest node the player could learn next (its price on
--- hover), and a scroll of tiers, each a small mark in the display face over
--- a row of square tiles — a frame for the node's picture, its name, and on
--- hover its price, what it does and what it needs; bright when it can be
--- learned, dim when it cannot, green when it is known — and under them the
--- paths, "Beyond the Fork": both, dimmed, before the choice, so it is seen
--- long before it is made; only one's own after.
+-- Everything centred: the columns stretch their rows to the full width, and
+-- each row centres its contents between two spacers. Three views. The TREE:
+-- insight at the top with a bar toward the cheapest node the player could
+-- learn next (its price on hover), and a scroll of tiers, each a small mark
+-- in the display face over rows of square tiles — no text on a tile, its
+-- name, price, lesson and needs on hover; gold-edged when it can be learned,
+-- dark when it cannot, green when it is known — and under them the paths,
+-- "Beyond the Fork": both, dimmed, before the choice, so it is seen long
+-- before it is made; only one's own after.
 -- DISCOVERIES: what has been found and what is left, the biomes as a count
 -- and a list. STUDIES: what the research table takes and pays, and the
 -- carved shape in the hand.
@@ -57,10 +58,10 @@ local ROW = 28
 -- without the interface, which draws them in the client's own face.
 local DISPLAY = ui and type(ui.theme) == "table" and type(ui.theme.font) == "string" and ui.theme.font or nil
 
--- A node tile: its picture in a square frame (the node's `icon`; an empty
--- frame for a node without one), its name under it, and everything else —
--- what it costs, what it does, what it needs — on hover.
-local TILE_W, TILE_H, PICTURE, TILE_GAP = 80, 98, 44, 8
+-- A node tile: one square button, its colour saying known, learnable now or
+-- not yet, its picture (the node's `icon`) drawn across it, and NO text —
+-- the name, the price, the lesson and the needs are all on hover.
+local TILE, TILE_GAP = 60, 8
 
 -- Builders --------------------------------------------------------------------------
 
@@ -137,7 +138,7 @@ local function next_node(uuid)
 end
 
 -- Tile colours: known, learnable now, and not yet.
-local TILE = {
+local TILE_LOOK = {
     known = { background = { 44, 66, 44, 255 }, border = { 120, 180, 110, 255 } },
     ready = { background = { 58, 50, 36, 255 }, border = ACCENT },
     locked = { background = { 30, 28, 26, 255 }, border = { 70, 66, 60, 255 } },
@@ -155,20 +156,14 @@ end
 local function node_tile(uuid, node, dimmed)
     local known = N.has(uuid, node.id)
     local ready = not known and not dimmed and N.can(uuid, node.id)
-    local look = known and TILE.known or (ready and TILE.ready or TILE.locked)
-    local colour = known and GOOD or (ready and INK or DIM)
-    local tip = node_tip(uuid, node)
+    local look = known and TILE_LOOK.known or (ready and TILE_LOOK.ready or TILE_LOOK.locked)
     return {
-        type = "container", direction = "column", align = "center", gap = 4, padding = 4,
-        size = TILE_W, cross_size = TILE_H, tooltip = tip,
-        style = { background = look.background, border = look.border },
-        children = {
-            -- The node's picture, framed; an empty frame for a node without one.
-            { type = "container", size = PICTURE, cross_size = PICTURE, padding = 2, tooltip = tip,
-              style = { border = look.border },
-              children = node.icon and { { type = "image", hash = hash_bytes(node.icon), grow = 1 } } or nil },
-            { type = "button", name = "node:" .. node.id, text = node.label, grow = 1, tooltip = tip,
-              style = { text_colour = colour, text_size = 11 } },
+        type = "button", name = "node:" .. node.id, text = "",
+        size = TILE, cross_size = TILE, tooltip = node_tip(uuid, node),
+        style = {
+            background = look.background, border = look.border,
+            -- The picture, drawn across the tile when the node has one.
+            nine_slice = node.icon and hash_bytes(node.icon) or nil,
         },
     }
 end
@@ -178,7 +173,7 @@ local function tile_rows(uuid, nodes, dimmed, body)
     for i = 1, #nodes, 6 do
         local tiles = {}
         for j = i, math.min(i + 5, #nodes) do tiles[#tiles + 1] = node_tile(uuid, nodes[j], dimmed) end
-        body[#body + 1] = centred(tiles, TILE_H, TILE_GAP)
+        body[#body + 1] = centred(tiles, TILE, TILE_GAP)
     end
 end
 
@@ -381,22 +376,22 @@ function M.build(uuid)
     end
     local path = record.path and F.paths[record.path] and F.paths[record.path].label
     return {
-        type = "container", direction = "column", gap = 6, padding = 6, grow = 1, children = {
+        type = "container", direction = "column", align = "stretch", gap = 6, padding = 6, grow = 1, children = {
             centred({
                 { type = "label", text = string.format("Insight %d", record.insight),
                   style = { font = DISPLAY, text_size = 18, text_colour = ACCENT } },
                 { type = "progress", permille = permille, size = 160,
                   tooltip = target and string.format("Next: %s, %d insight", target.label, target.cost)
                       or "Nothing left to learn here." },
-            }, 28),
+            }, 36),
             centred({
                 tab_button("tree", "Tree"),
                 tab_button("discoveries", "Discoveries"),
                 tab_button("studies", "Studies"),
-            }, 28),
-            centred({ label(status[uuid] or (path and ("Your path: " .. path)) or "", DIM) }, 20),
-            { type = "scroll", grow = 1, children = {
-                { type = "container", direction = "column", gap = 6, children = body },
+            }, 36),
+            centred({ label(status[uuid] or (path and ("Your path: " .. path)) or "", DIM) }, 22),
+            { type = "scroll", size = 0, grow = 1, children = {
+                { type = "container", direction = "column", align = "stretch", gap = 6, children = body },
             } },
         },
     }

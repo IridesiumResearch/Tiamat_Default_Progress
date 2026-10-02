@@ -12,6 +12,7 @@ mod rig;
 
 use rig::{MOD, OTHER, PLAYER, Rig, Setup, hex};
 use tiamat_core::script::{ChatEvent, ScriptVm};
+use tiamat_core::ui;
 
 const MAGIC: &str = include_str!("../fixtures/magic.lua");
 const TECH: &str = include_str!("../fixtures/tech.lua");
@@ -38,6 +39,7 @@ fn main() {
     creative();
     interface();
     survival();
+    layout();
     determinism();
     println!("progress native check: all passed");
 }
@@ -372,7 +374,7 @@ fn one_door() {
     assert!(tree.contains("The Fire") && tree.contains("Menstrua") && tree.contains("The Focus"), "{tree}");
     assert!(!tree.contains("The Deep") && tree.contains("1 more, not yet in sight."), "{tree}");
     // The Focus has a picture in its frame; nothing else does.
-    assert_eq!(tree.matches("Image").count(), 1, "one node, one picture: {tree}");
+    assert_eq!(tree.matches("nine_slice: Some").count(), 1, "one node, one picture: {tree}");
     println!("one door: ok");
 }
 
@@ -504,6 +506,69 @@ fn survival() {
     assert_eq!(r.said(), "Your hand passes through the door. The dead choose nothing.");
     assert_eq!(r.ask("m path"), "nil");
     println!("survival: ok");
+}
+
+/// A ruler for the engine's own layout: text a little over half its size
+/// wide a character and a third taller than its size, and a button's padding
+/// as the client adds it (`client/src/dialog.rs`). Rough on purpose; what is
+/// checked is arithmetic that holds for any honest font.
+struct Ruler;
+
+impl ui::Measure for Ruler {
+    fn natural(&self, widget: &ui::Widget, style: &ui::Style) -> (i32, i32) {
+        let size = i32::from(style.text_size.unwrap_or(14));
+        let text = |t: &str| (t.chars().count() as i32 * size * 11 / 20, size * 4 / 3);
+        match widget {
+            ui::Widget::Label { text: t } => text(t),
+            ui::Widget::Button { text: t } => {
+                let (w, h) = text(t);
+                (w + 16, h + 8)
+            }
+            ui::Widget::Progress { .. } => (120, 12),
+            ui::Widget::Image { .. } => (64, 64),
+            _ => (0, 0),
+        }
+    }
+}
+
+/// The Research tree as the engine lays it out in the tab's body at about
+/// 800x600: the header rows keep their height and do not overlap, the rows
+/// fill the width, and every row of tiles is centred in it.
+fn layout() {
+    let mut r = Rig::new(Setup { craft: true, fixtures: paths(), ..Setup::default() });
+    r.join(PLAYER);
+    r.tick(1);
+    r.action(PLAYER, &format!("{MOD}:research"));
+    let tree = r.dialogs.shown.lock().unwrap().last().unwrap().tree.clone();
+    let area = ui::Rect::new(0, 0, 560, 300);
+    let laid = ui::layout(&tree, area, &Ruler);
+
+    let rows = &laid.children;
+    for (i, want) in [(0, 36), (1, 36)] {
+        assert_eq!(rows[i].rect.h, want, "header row {i} keeps its height");
+    }
+    for pair in rows.windows(2) {
+        assert!(pair[1].rect.y >= pair[0].rect.y + pair[0].rect.h, "rows do not overlap: {:?}", rows.iter().map(|r| r.rect).collect::<Vec<_>>());
+    }
+    let scroll = &rows[3];
+    assert!(scroll.rect.h > 150, "the scroll has what is left: {:?}", scroll.rect);
+
+    // Every row of tiles: centred, to within a pixel.
+    let mut checked = 0;
+    for row in &scroll.children[0].children {
+        assert!(row.rect.x >= 0 && row.rect.x + row.rect.w <= 560, "a row fits the width: {:?}", row.rect);
+        let kids = &row.children;
+        if kids.len() >= 3 && kids[1].rect.w == 60 {
+            let left = kids[1].rect.x - row.rect.x;
+            let last = &kids[kids.len() - 2];
+            let right = row.rect.x + row.rect.w - (last.rect.x + last.rect.w);
+            assert!((left - right).abs() <= 1, "tiles centred: {left} left, {right} right");
+            assert_eq!(kids[1].rect.h, 60, "a tile is square");
+            checked += 1;
+        }
+    }
+    assert!(checked >= 4, "the tiers' rows of tiles were checked: {checked}");
+    println!("layout: ok");
 }
 
 /// The same play twice gives the same storage, key for key.
