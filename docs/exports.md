@@ -93,11 +93,11 @@ load, in your `init.lua`. After that they answer `nil, "... while mods load"`.
 
 All are namespaced `tiamat_default_progress:` by the engine.
 
-- **Blocks:** `research_table` — on an engine with whole blocks, ONE PIECE:
-  any tool takes it whole and a chisel cannot cut it, and its cells are a
-  table's (a top on four legs). With `models/research_table.glb` in this
-  mod's directory it is drawn as that model. On an engine without them it
-  is a plain block, and the server's log says so.
+- **Blocks:** `research_table` — ONE PIECE (engine b046dc8 and later): any
+  tool takes it whole and a chisel cannot cut it, and its cells are a
+  table's (a top on four legs). Drawn as its cells until `config.lua` names
+  a model (`C.table_model`), then as that model. On an engine older than
+  whole blocks it is a plain block, and the server's log says so.
 - **Items:** `keystone`.
 - **Nodes:** the shared tree — `shared.firecraft` (tier 0, given with a
   player's first fire), `shared.fire_setting`, `shared.charcoal_clamp`,

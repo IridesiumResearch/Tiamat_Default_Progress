@@ -204,6 +204,15 @@ fn research() {
     assert_eq!(r.ask("progress"), "Insight 93. Path: none yet. Nodes known: 0.");
     assert!(r.hud(PLAYER).contains("Study orichalcum") || r.hud(PLAYER).contains("Study herb"), "{}", r.hud(PLAYER));
 
+    // The table is one piece, shaped as a table: four feet, four legs and a
+    // top of nine (engine b046dc8). No model yet; the cells draw it.
+    let rules = r.vm.registered_block_rules();
+    let table = rules.iter().find(|b| b.block == format!("{MOD}:research_table")).expect("the table is registered");
+    assert!(table.whole, "the research table comes up in one piece");
+    assert_eq!(table.shape.count_ones(), 17, "a top on four legs: {:027b}", table.shape);
+    assert_eq!(table.shape & 0b111, 0b101, "the bottom row's corners are feet and its middle is air");
+    assert_eq!(table.model, None, "no model until there is art");
+
     // The table is Craft's to open, as every station is.
     assert!(!r.use_block(PLAYER, "research_table"), "left to Craft");
     assert_eq!(r.ask("progress sources"), "Insight by source: study +93.");

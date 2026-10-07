@@ -35,9 +35,9 @@ R.station = game.mod_id .. ":research_table"
 -- when `models/research_table.glb` is in this mod's directory the client
 -- draws that model in their place (§8.6).
 --
--- `whole`, `shape` and `model` are new in the engine (its model blocks). An
--- engine without them refuses the fields, and then the table is the plain
--- block it always was, with a line in the log: the mod loads either way.
+-- `whole`, `shape` and `model` came to the engine after 0.3.0 (engine
+-- b046dc8). An older engine refuses the fields, and then the table is the
+-- plain block it always was, with a line in the log: the mod loads either way.
 local TABLE = {
     id = "research_table",
     name = "Research table",
@@ -49,9 +49,14 @@ local TABLE = {
 local function one_piece()
     local spec = { whole = true, shape = C.table_shape }
     for key, value in pairs(TABLE) do spec[key] = value end
-    -- A model only when its file is there: registering one that is not is
-    -- an error, which is the test.
-    if pcall(game.register_model, { id = "research_table", file = C.table_model, scale = C.table_model_scale }) then
+    -- A model only when config.lua names one. Not "when the file is there":
+    -- registering a model the engine cannot find is not an error, and a
+    -- block whose model never arrives draws NOTHING — an invisible table.
+    -- Its skin is the PNG beside it (a `.glb` that embeds its image is
+    -- refused); without one it draws matte white.
+    if C.table_model then
+        game.register_model{ id = "research_table", file = C.table_model,
+            texture = C.table_model_texture, scale = C.table_model_scale }
         spec.model = "research_table"
     end
     return spec
