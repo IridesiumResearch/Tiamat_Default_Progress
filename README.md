@@ -7,8 +7,10 @@ The climb, for the [Tiamat](https://github.com/IridesiumResearch/Tiamat-Voxel-Ga
 voxel engine: the mod that turns "you can make things" into "you are
 climbing". It keeps one number per player — **insight** — earned by doing
 new things and by studying materials at a research table; a **node graph**
-insight is spent on; and **the Fork**, where a player binds themselves to one
-of two doors and the other closes.
+insight is spent on; and **the paths** beyond the shared tree — magic and
+science — which every player may study, the one they pursue cheaper and
+the other dearer and fainter the further they climb (or, as a world option,
+the old Fork: one door, and the other closed for ever).
 
 It ships **no doors of its own.** Magic and tech register themselves as
 paths later, and until one does the Fork is a locked room the player can see

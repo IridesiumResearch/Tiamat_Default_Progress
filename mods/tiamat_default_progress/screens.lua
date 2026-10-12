@@ -38,6 +38,7 @@ M.tab = game.mod_id .. ":research"
 
 local views = {}    -- uuid -> "tree" | "discoveries" | "studies"
 local status = {}   -- uuid -> the last thing the screen said
+local asking = {}   -- uuid -> the node whose path's question is open
 local open = {}     -- uuid -> true while the plain dialog is open
 
 -- Colours: the interface's when it is here, plain otherwise.
@@ -104,7 +105,11 @@ local function node_tip(uuid, node)
     elseif node.auto then
         state = "comes of itself"
     else
-        state = node.cost .. " insight"
+        state = N.cost(uuid, node.id) .. " insight"
+        if N.lead(uuid, node.path) > 0 then
+            local main = F.paths[N.pursuing(uuid)]
+            state = state .. ", dearer while you pursue " .. (main and main.label or "another path")
+        end
     end
     local parts = { node.label .. " (" .. state .. ").", node.text }
     if #node.requires > 0 then
@@ -126,15 +131,16 @@ end
 
 --- The cheapest node a player could learn but for insight, or nil.
 local function next_node(uuid)
-    local best
+    local best, best_cost
     for _, node in ipairs(N.list()) do
         local ok, why = N.can(uuid, node.id)
         local short = not ok and string.find(why or "", "insight; you have", 1, true)
-        if (ok or short) and node.cost > 0 and (best == nil or node.cost < best.cost) then
-            best = node
+        local cost = N.cost(uuid, node.id)
+        if (ok or short) and cost > 0 and (best == nil or cost < best_cost) then
+            best, best_cost = node, cost
         end
     end
-    return best
+    return best, best_cost
 end
 
 -- Tile colours: known, learnable now, and not yet.
@@ -239,6 +245,30 @@ local function tree_view(uuid)
     body[#body + 1] = heading("Beyond the Fork")
     local paths = F.list()
     local mine = S.record(uuid).path
+    if not C.exclusive_paths then
+        if #paths == 0 then
+            body[#body + 1] = centred({ label("No door has been built in this world yet.", DIM) }, 22)
+        end
+        local pursuing = N.pursuing(uuid)
+        table.sort(paths, function(a, b)
+            if (a.id == pursuing) ~= (b.id == pursuing) then return a.id == pursuing end
+            return false
+        end)
+        for _, path in ipairs(paths) do
+            local own = {}
+            for _, node in ipairs(nodes) do
+                if node.path == path.id then own[#own + 1] = node end
+            end
+            local yours = path.id == pursuing
+            body[#body + 1] = centred({ label(path.label .. (yours and " (you pursue it)" or ""),
+                yours and GOOD or DIM) }, 22)
+            if #own == 0 then
+                body[#body + 1] = centred({ label("Nothing is written here yet.", DIM) }, 22)
+            end
+            path_section(uuid, path, own, false, body)
+        end
+        return body
+    end
     if #paths == 0 then
         body[#body + 1] = centred({ label("No door has been built in this world yet.", DIM) }, 22)
     end
@@ -358,9 +388,9 @@ end
 function M.build(uuid)
     local view = views[uuid] or "tree"
     local record = S.record(uuid)
-    local target = next_node(uuid)
+    local target, target_cost = next_node(uuid)
     local permille = 1000
-    if target then permille = math.min(1000, record.insight * 1000 // target.cost) end
+    if target then permille = math.min(1000, record.insight * 1000 // target_cost) end
 
     local body
     if view == "discoveries" then
@@ -374,14 +404,15 @@ function M.build(uuid)
     local function tab_button(name, text)
         return button("view:" .. name, text, view == name and ACCENT or INK)
     end
-    local path = record.path and F.paths[record.path] and F.paths[record.path].label
+    local pursued = C.exclusive_paths and record.path or N.pursuing(uuid)
+    local path = pursued and F.paths[pursued] and F.paths[pursued].label
     return {
         type = "container", direction = "column", align = "stretch", gap = 6, padding = 6, grow = 1, children = {
             centred({
                 { type = "label", text = string.format("Insight %d", record.insight),
                   style = { font = DISPLAY, text_size = 18, text_colour = ACCENT } },
                 { type = "progress", permille = permille, size = 160,
-                  tooltip = target and string.format("Next: %s, %d insight", target.label, target.cost)
+                  tooltip = target and string.format("Next: %s, %d insight", target.label, target_cost)
                       or "Nothing left to learn here." },
             }, 36),
             centred({
@@ -389,7 +420,11 @@ function M.build(uuid)
                 tab_button("discoveries", "Discoveries"),
                 tab_button("studies", "Studies"),
             }, 36),
-            centred({ label(status[uuid] or (path and ("Your path: " .. path)) or "", DIM) }, 22),
+            asking[uuid] and centred({
+                label(string.format(C.pursue_question, (F.paths[N.node(asking[uuid]).path] or {}).label or "a path"), ACCENT),
+                button("pursue:yes", "Research it", INK),
+                button("pursue:no", "Not yet", DIM),
+            }, 34) or centred({ label(status[uuid] or (path and ("You pursue " .. path)) or "", DIM) }, 22),
             { type = "scroll", size = 0, grow = 1, children = {
                 { type = "container", direction = "column", align = "stretch", gap = 6, children = body },
             } },
@@ -406,8 +441,29 @@ function M.press(uuid, name)
         status[uuid] = nil
         return true
     end
+    if name == "pursue:yes" or name == "pursue:no" then
+        local id = asking[uuid]
+        asking[uuid] = nil
+        if name == "pursue:no" or not id then
+            status[uuid] = nil
+            return true
+        end
+        local ok, why = N.unlock(uuid, id)
+        status[uuid] = ok and ("Learned " .. N.node(id).label .. ".") or why
+        return true
+    end
     local id = string.match(name, "^node:(.+)$")
     if id then
+        asking[uuid] = nil
+        local node = N.node(id)
+        -- The first node of a path, where the paths coexist, asks first: it
+        -- is the step that sets a player on that path.
+        if node and node.path ~= "shared" and not C.exclusive_paths and N.depth(uuid, node.path) == 0
+            and N.can(uuid, id) then
+            asking[uuid] = id
+            status[uuid] = nil
+            return true
+        end
         local ok, why = N.unlock(uuid, id)
         status[uuid] = ok and ("Learned " .. N.node(id).label .. ".") or why
         return true
@@ -478,7 +534,7 @@ tdp.on_dialog("research", function(event)
 end)
 
 tdp.on_leave(function(event)
-    views[event.player], status[event.player], open[event.player] = nil, nil, nil
+    views[event.player], status[event.player], open[event.player], asking[event.player] = nil, nil, nil, nil
 end)
 
 -- Whatever changes what the screen shows redraws it.

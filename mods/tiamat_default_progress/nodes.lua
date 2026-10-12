@@ -247,8 +247,75 @@ function N.has(uuid, id)
     if node.path == "shared" then
         return creative or record.nodes[id] == true
     end
-    if record.path ~= node.path then return false end
+    if C.exclusive_paths and record.path ~= node.path then return false end
     return record.nodes[id] == true
+end
+
+-- Pursuit: both paths in one world (the default) ---------------------------------
+--
+-- A player may learn the nodes of every path. The path they are PURSUING is
+-- the one they have gone furthest up — the highest tier they hold in it —
+-- with the one they took first breaking a tie. Every other path costs more
+-- the further their lead runs (`switch_percent` a tier), and shows less of
+-- itself (`fade_tiers` a tier), down to the nodes it begins with: the door
+-- back stays visible, and the rest of that tree is gone.
+--
+-- With `exclusive_paths` on, a player takes one path for ever, and none of
+-- this applies: the other path's nodes are never held (the old Fork).
+
+--- The highest tier a player holds in a path; 0 for none.
+function N.depth(uuid, path)
+    local deepest = 0
+    local prefix = path .. "."
+    for id in pairs(S.record(uuid).nodes) do
+        local node = nodes[id]
+        if node and not node.broken and U.starts(id, prefix) and node.tier > deepest then
+            deepest = node.tier
+        end
+    end
+    return deepest
+end
+
+--- The path a player is pursuing, or nil: the one they are deepest in, and
+--- the one they began with on a tie.
+function N.pursuing(uuid)
+    local record = S.record(uuid)
+    local best, deepest = record.path, record.path and N.depth(uuid, record.path) or 0
+    for _, path in ipairs(tdp.fork and tdp.fork.list() or {}) do
+        local d = N.depth(uuid, path.id)
+        if d > deepest then best, deepest = path.id, d end
+    end
+    return best
+end
+
+--- How far the path a player pursues is ahead of `path`, in tiers; 0 when it
+--- is their own, when they pursue nothing, or in a world of one path each.
+function N.lead(uuid, path)
+    if C.exclusive_paths or path == "shared" then return 0 end
+    local main = N.pursuing(uuid)
+    if main == nil or main == path then return 0 end
+    local gap = N.depth(uuid, main) - N.depth(uuid, path)
+    return gap > 0 and gap or 0
+end
+
+--- What a node costs THIS player: dearer on a path they are not pursuing.
+function N.cost(uuid, id)
+    local node = nodes[id]
+    if node == nil then return 0 end
+    local lead = N.lead(uuid, node.path)
+    return node.cost * (100 + C.switch_percent * lead) // 100
+end
+
+--- The lowest tier a path's usable nodes begin at.
+local function first_tier(path)
+    local lowest
+    for _, id in ipairs(order) do
+        local node = nodes[id]
+        if node.path == path and not node.broken and (lowest == nil or node.tier < lowest) then
+            lowest = node.tier
+        end
+    end
+    return lowest or 0
 end
 
 --- Whether a node shows to a player on the Research tab. A node held always
@@ -258,6 +325,11 @@ function N.visible(uuid, id)
     local node = nodes[id]
     if node == nil or node.broken then return false end
     if N.has(uuid, id) then return true end
+    local lead = N.lead(uuid, node.path)
+    if lead > 0 then
+        local ceiling = math.max(first_tier(node.path), C.max_tier - C.fade_tiers * lead)
+        if node.tier > ceiling then return false end
+    end
     local path = tdp.fork and tdp.fork.paths[node.path]
     local rule = node.reveal or (path and path.reveal) or "always"
     if rule ~= "near" then return true end
@@ -275,17 +347,22 @@ function N.can(uuid, id)
     if N.has(uuid, id) then return nil, "you know " .. node.label .. " already" end
     if node.auto then return nil, node.label .. " is not learned; it comes" end
     local record = S.record(uuid)
-    if node.path ~= "shared" then
+    if node.path ~= "shared" and C.exclusive_paths then
         if record.path == nil then return nil, node.label .. " lies beyond the Fork" end
         if record.path ~= node.path then return nil, node.label .. " belongs to the other path" end
     end
     for _, r in ipairs(node.requires) do
-        if not N.has(uuid, r) then
-            return nil, node.label .. " needs " .. (nodes[r] and nodes[r].label or r) .. " first"
+        -- Where the paths coexist there is no door to choose at: the Fork is
+        -- passed by knowing the Keystone, and taken by the first path node.
+        local need = r
+        if r == "shared.fork" and not C.exclusive_paths then need = "shared.keystone" end
+        if not N.has(uuid, need) then
+            return nil, node.label .. " needs " .. (nodes[need] and nodes[need].label or need) .. " first"
         end
     end
-    if record.insight < node.cost then
-        return nil, string.format("%s needs %d insight; you have %d", node.label, node.cost, record.insight)
+    local cost = N.cost(uuid, id)
+    if record.insight < cost then
+        return nil, string.format("%s needs %d insight; you have %d", node.label, cost, record.insight)
     end
     return true
 end
@@ -314,8 +391,15 @@ function N.unlock(uuid, id)
     local ok, why = N.can(uuid, id)
     if not ok then return nil, why end
     local node = nodes[id]
-    I.award(uuid, -node.cost, nil, "spent")
-    return N.grant(uuid, id)
+    local cost = N.cost(uuid, id)
+    local before = N.pursuing(uuid)
+    local entering = node.path ~= "shared" and N.depth(uuid, node.path) == 0
+    I.award(uuid, -cost, nil, "spent")
+    local ok, why = N.grant(uuid, id)
+    if ok and not C.exclusive_paths and tdp.fork then
+        tdp.fork.pursued(uuid, node.path, entering, before)
+    end
+    return ok, why
 end
 
 --- Takes a node back (a repath, an operator's reset). Nothing is refunded.

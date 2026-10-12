@@ -171,10 +171,44 @@ function F.choose(uuid, id)
     S.set_path(uuid, id)
     S.set_forked(uuid, S.now())
     N.grant(uuid, "shared.fork", true)
-    game.chat_to(uuid, "You have chosen: " .. path.label .. ". The other door is closed to you.")
+    if C.exclusive_paths then
+        game.chat_to(uuid, "You have chosen: " .. path.label .. ". The other door is closed to you.")
+    else
+        game.chat_to(uuid, "You are pursuing " .. path.label .. ".")
+    end
     if path.on_choose then path.on_choose(uuid) end
     for _, fn in ipairs(subscribers.fork) do fn(uuid, id) end
     announce(uuid, "Somebody near you has chosen: " .. path.label .. ".")
+    I.show(uuid)
+end
+
+-- Pursuit, where the paths coexist ------------------------------------------------
+
+--- Told after every node a player learns where the paths coexist: the
+--- first node of a path is pursuing it (or studying it beside the one they
+--- pursue), and a lead that passes to another path says so.
+function F.pursued(uuid, id, entering, before)
+    local path = F.paths[id]
+    if path and entering then
+        if S.record(uuid).path == nil then
+            S.set_path(uuid, id)
+            S.set_forked(uuid, S.now())
+            N.grant(uuid, "shared.fork", true)
+            game.chat_to(uuid, "You are pursuing " .. path.label .. ".")
+            for _, fn in ipairs(subscribers.fork) do fn(uuid, id) end
+            announce(uuid, "Somebody near you has begun to pursue " .. path.label .. ".")
+        else
+            game.chat_to(uuid, "You are studying " .. path.label .. " beside your own path.")
+        end
+        if path.on_choose then path.on_choose(uuid) end
+    end
+    local now = N.pursuing(uuid)
+    if now and now ~= before and before ~= nil and F.paths[now] then
+        S.set_path(uuid, now)
+        -- Nothing is lost, so this is not a repath: `on_repath` means a path
+        -- abandoned and its nodes taken, and its subscribers act on that.
+        game.chat_to(uuid, "You are pursuing " .. F.paths[now].label .. " now; the other grows faint.")
+    end
     I.show(uuid)
 end
 
@@ -206,10 +240,15 @@ local pending = {}   -- uuid -> { path, kind = "choose" | "repath" }
 
 local function confirm(uuid, path, kind)
     pending[uuid] = { path = path.id, kind = kind }
-    local text = kind == "repath"
-        and string.format("Abandon %s and take this door? Every node of it is lost, and half your insight with it.",
+    local text
+    if kind == "repath" then
+        text = string.format("Abandon %s and take this door? Every node of it is lost, and half your insight with it.",
             F.paths[S.record(uuid).path].label)
-        or path.sentence
+    elseif C.exclusive_paths then
+        text = path.sentence
+    else
+        text = string.format(C.pursue_question, path.label)
+    end
     game.show_dialog{
         player = uuid,
         form = "fork",
@@ -246,6 +285,16 @@ function F.door_verdict(uuid, id)
     local record = S.record(uuid)
     local path = F.paths[id]
     if tdp.life.ghost(uuid) then return nil, "Your hand passes through the door. The dead choose nothing." end
+    if not C.exclusive_paths then
+        if record.path ~= nil then
+            return nil, "Every door is open to you. Study " .. path.label .. " at the Research tab; the further you are down "
+                .. (F.paths[record.path] and F.paths[record.path].label or "your path") .. ", the dearer it is."
+        end
+        if not N.has(uuid, "shared.keystone") then
+            return nil, "The door is shut to you. Learn the Keystone first."
+        end
+        return "choose"
+    end
     if record.path == id then return nil, "You are already of " .. path.label .. "." end
     if record.path ~= nil then
         if not C.repath then return nil, path.refusal end

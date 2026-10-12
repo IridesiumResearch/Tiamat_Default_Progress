@@ -13,3 +13,4 @@ assert(p.register_path{
 } == true)
 assert(p.register_path{ id = "tech2", door = "schism_tech:analytical_engine" } == nil, "one door, one path")
 assert(p.register_node{ id = "tech.steam", tier = 3, requires = "shared.fork", label = "Steam" } == true)
+assert(p.register_node{ id = "tech.gears", tier = 4, requires = "tech.steam", label = "Gears" } == true)

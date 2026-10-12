@@ -34,6 +34,9 @@ end
 
 -- The two world options (mod.toml). Read once; they never change for a world.
 C.repath = game.world_option(game.mod_id .. ":repath") == true
+-- One path a player, for ever (the old Fork), or — the default — every path
+-- open to everybody, the one pursued cheaper and the rest dearer and fading.
+C.exclusive_paths = game.world_option(game.mod_id .. ":exclusive_paths") == true
 C.shared_gates = game.world_option(game.mod_id .. ":shared_gates") == true
 
 -- The node graph ---------------------------------------------------------------
@@ -254,6 +257,14 @@ C.keystone_inputs = {
     { "tiamat_default_craft:iron_frame", count = 1 },
 }
 C.keystone_ticks = 200
+
+-- Pursuit, where the paths coexist (nodes.lua). A path not pursued costs
+-- `switch_percent` more for every tier the pursued one is ahead of it, and
+-- shows `fade_tiers` fewer of its tiers for each, down to the tier it begins
+-- at. The first node of a path asks first (screens.lua).
+C.switch_percent = 50
+C.fade_tiers = 1
+C.pursue_question = "If you research this, you are pursuing %s."
 
 -- A path's door is made where the Keystone is.
 C.door_station = "workbench"

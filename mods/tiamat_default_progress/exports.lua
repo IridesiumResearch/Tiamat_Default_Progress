@@ -63,10 +63,19 @@ return {
         return N.has(uuid, node)
     end),
 
-    --- The player's side of the Fork: a path id, or nil before it.
+    --- The path the player pursues: a path id, or nil before any. Where the
+    --- paths coexist it is the one they are deepest in; in a world of one
+    --- path each, the one they chose.
     path = safe("path", function(uuid)
         if not U.player(uuid) then return nil end
-        return S.record(uuid).path
+        if tdp.config.exclusive_paths then return S.record(uuid).path end
+        return N.pursuing(uuid)
+    end),
+
+    --- What a node costs this player now: dearer on a path they do not pursue.
+    cost = safe("cost", function(uuid, node)
+        if not U.player(uuid) or type(node) ~= "string" or not N.node(node) then return nil, "no such node" end
+        return N.cost(uuid, node)
     end),
 
     --- A player's insight.

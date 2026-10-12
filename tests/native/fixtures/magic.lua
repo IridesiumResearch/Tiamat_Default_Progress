@@ -84,6 +84,8 @@ game.register_on_chat(function(e)
     elseif word == "unlock" then
         local ok, why = p.unlock(e.player, rest)
         say = tostring(ok) .. " " .. tostring(why)
+    elseif word == "cost" then
+        say = tostring(p.cost(e.player, rest))
     elseif word == "path" then
         say = tostring(p.path(e.player))
     elseif word == "late" then

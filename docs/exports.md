@@ -28,8 +28,9 @@ in hex, as every hook event reports it.
 | Field | Shape | What it does |
 |---|---|---|
 | `version` | integer, `1` | Bumped only when a change would break a reader. |
-| `has(uuid, node)` | a node id | Whether the player holds the node. Unknown or disabled nodes are `false`; a node of the OTHER path is `false`, always; in a Creative world every shared node is `true`. A table lookup: safe to ask on the tick. |
-| `path(uuid)` | | The player's side of the Fork, a path id, or `nil` before it. |
+| `has(uuid, node)` | a node id | Whether the player holds the node. Unknown or disabled nodes are `false`; in a world of one path per player a node of the OTHER path is `false`, always; in a Creative world every shared node is `true`. A table lookup: safe to ask on the tick. |
+| `path(uuid)` | | The path the player pursues: a path id, or `nil` before any. Where the paths coexist (the default), the one they are deepest in; in a world of one path each, the one they chose. |
+| `cost(uuid, node)` | a node id | What the node costs this player now: dearer on a path they do not pursue. |
 | `insight(uuid)` | | The player's insight. |
 | `effects_of(uuid, prefix?)` | `"craft."` | The summed effects of every node the player holds, for keys starting with `prefix` (all of them without one): `{ ["craft.mould_pours"] = 2 }`. Read it when the number is used; nothing about an effect is stored, so retuning one needs no migration. |
 
@@ -67,13 +68,42 @@ and not the registering mod's other nodes.
 | `register_path(spec)` | `{ id, label?, door, recipe?, sentence?, refusal?, on_choose?, branches?, reveal? }` | A path. `id` is a word (`"magic"`); `door` is your block, which a player uses (the place control, nothing in hand) to choose; `recipe = { inputs = { ... } }` makes the door at the workbench, with the Keystone added and `shared.keystone` required; `sentence` is the confirmation's line (default "This binds you. The other door closes."); `refusal` what the door says to a player of the other path; `on_choose(uuid)` runs in your sandbox when a player chooses you (magic sets its mana there). `branches = { FIRE = "The Fire" }` names your nodes' branch codes on the Research tab (a code with no name is shown as itself); `reveal` is the default for your nodes, `"always"` (the default) or `"near"`. |
 | `paths()` | | Every path, as `{ id, label, door }`. |
 
-A door offers its path to a player who holds `shared.keystone` and has no
-path. Choosing sets their path and gives them `shared.fork`, which every
-tier-3 path node requires. A player of the other path hears the door's
-`refusal` — unless the world was made with `repath` on, when the door offers
-to take them (not within twenty minutes of their last choice), at the cost
-of every node of the path they leave and half their insight. Shared nodes
-are never taken.
+**Every path is open to everybody — by default.** A player who knows
+`shared.keystone` may learn the nodes of every path, so one world holds
+mages and engineers and a player may be something of both. `shared.fork`,
+which a path's third tier requires, is the Keystone known; it is given with
+the first path node they learn.
+
+- **Pursuing.** The path a player pursues is the one they are deepest in —
+  the highest tier they hold in it — and the first they took on a tie.
+  `path(uuid)` answers it. The first node of each path asks before it is
+  learned, on the Research tab: "If you research this, you are pursuing
+  <label>." Your `on_choose(uuid)` runs the first time a player learns a
+  node of your path, whether it is the path they pursue or one they study
+  beside it; `on_fork` subscribers hear the first path a player takes.
+- **Switching is dearer the further one goes.** A node of a path not
+  pursued costs `switch_percent` (50) more for every tier the pursued path is
+  ahead of it — `cost(uuid, node)` answers the price — and the Research tab
+  shows `fade_tiers` (1) fewer of that path's tiers for each, down to the
+  tier it begins at: the door back is always in sight, the rest of the tree
+  is gone. Hold as much of one as of the other and neither is dearer.
+- **Nothing is lost** when the lead passes from one path to another, so
+  `on_repath` is not called for it.
+
+A door, in this world, is one way to begin: a player who knows the Keystone
+and pursues nothing is asked the same question there, and a player who
+pursues a path is told every door is open to them at the Research tab.
+
+**One path per player** is the world option `exclusive_paths`, off by
+default. With it on, the Fork binds: a door offers its path to a player who
+holds `shared.keystone` and has no path, and its `sentence` (default "This
+binds you. The other door closes.") is the confirmation. Choosing sets their
+path and gives them `shared.fork`. Every node of the other path is refused
+them, `has` answers `false` for it, and the door of the other path says its
+`refusal` — unless the world was also made with `repath` on, when the door
+offers to take them (not within twenty minutes of their last choice), at the
+cost of every node of the path they leave and half their insight, and
+`on_repath` is called. Shared nodes are never taken.
 
 ### Subscribers
 
@@ -126,8 +156,9 @@ All are namespaced `tiamat_default_progress:` by the engine.
 - **Action:** `research` (default key G): the Research screen.
 - **Tab:** `tiamat_default_progress:research` on the interface's screen.
 - **Sound:** `chime`, bound to this mod's cue `fork`.
-- **World options:** `repath` (may a player change path) and `shared_gates`
-  (does the shared tree gate Craft's bronze and iron recipes), both off.
+- **World options:** `exclusive_paths` (one path per player, the binding
+  Fork), `repath` (with it, may a player change path) and `shared_gates`
+  (does the shared tree gate Craft's bronze and iron recipes), all off.
 
 ## Commands it accepts
 

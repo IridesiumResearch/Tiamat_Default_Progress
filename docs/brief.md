@@ -18,7 +18,14 @@
 > bot of §10 cannot play a station yet (engine ask 4): step 8 is a
 > per-source insight ledger any real session fills, and a model of the
 > first three hours (`docs/pacing.md`), with `config.lua` left as designed
-> until a real session is measured. `docs/engine-asks.md` and
+> until a real session is measured.
+>
+> **The Fork changed by the designer's word (2026-10-12):** by default both
+> paths coexist in a world so players can meet with their powers. Every
+> player may study both; the first node of each asks "If you research this,
+> you are pursuing <path>."; the path not pursued costs more and shows less
+> of itself the further the pursued one climbs. The binding Fork of §7 is
+> the world option `exclusive_paths`, off by default. `docs/engine-asks.md` and
 > `docs/sibling-asks.md` keep the current state.
 
 # Tiamat_default_progress — build prompt

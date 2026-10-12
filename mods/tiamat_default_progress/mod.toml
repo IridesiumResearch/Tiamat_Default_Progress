@@ -31,9 +31,15 @@ license = "GPL-3.0-only"
 # order, and this mod loads after the interface mod that owns the look.
 
 [[world_option]]
+id = "exclusive_paths"
+name = "One path per player"
+description = "Off: every player may study magic and science both, the path they pursue cheaper and the other dearer the further they go. On: the Fork binds, and the other path is closed for ever."
+default = 0
+
+[[world_option]]
 id = "repath"
 name = "Changing path"
-description = "May a player abandon their chosen path and take the other? Costs every path node and half their insight."
+description = "With one path per player: may a player abandon their chosen path and take the other? Costs every path node and half their insight."
 default = 0
 
 [[world_option]]

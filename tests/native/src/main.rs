@@ -40,6 +40,7 @@ fn main() {
     interface();
     survival();
     layout();
+    pursuit();
     determinism();
     println!("progress native check: all passed");
 }
@@ -92,8 +93,8 @@ fn graph() {
     r.join(PLAYER);
     r.tick(1);
     let nodes = r.ask("m nodes");
-    assert!(nodes.starts_with("17 shared.firecraft shared.fire_setting"), "{nodes}");
-    assert!(nodes.ends_with("shared.fork magic.attune tech.steam magic.focus magic.deep"), "{nodes}");
+    assert!(nodes.starts_with("18 shared.firecraft shared.fire_setting"), "{nodes}");
+    assert!(nodes.ends_with("shared.fork magic.attune tech.steam magic.focus tech.gears magic.deep"), "{nodes}");
     for bad in ["magic.stray", "magic.loop_a", "magic.loop_b", "magic.after_loop", "magic.dangling", "shared.leans", "ghost.node"] {
         assert!(!nodes.contains(bad), "{bad} is disabled");
         assert_eq!(r.ask(&format!("m has {bad}")), "false");
@@ -251,7 +252,7 @@ fn unlocking() {
     assert_eq!(r.ask("m unlock shared.fire_setting"), "true nil");
     assert_eq!(r.ask("m unlock shared.fire_setting"), "nil you know Fire-setting already");
     assert_eq!(r.ask("progress"), "Insight 95. Path: none yet. Nodes known: 2.", "10 spent, 5 found");
-    assert_eq!(r.ask("m unlock magic.attune"), "nil Attunement lies beyond the Fork");
+    assert_eq!(r.ask("m unlock magic.attune"), "nil Attunement needs The Keystone first", "where the paths coexist, the Keystone is the Fork");
     assert_eq!(r.ask("m unlock shared.stonewright"), "true nil");
     assert_eq!(r.ask("m effects craft."), "craft.anvil_strikes=-1 craft.chisel_wear_percent=-50 craft.fireset_ticks=-200");
     assert_eq!(r.ask("m effects"), "craft.anvil_strikes=-1 craft.chisel_wear_percent=-50 craft.fireset_ticks=-200");
@@ -280,9 +281,10 @@ fn unlocking() {
     println!("unlocking: ok");
 }
 
-/// Two doors: the Keystone opens one, the choice closes the other.
+/// Two doors, in a world of one path per player: the Keystone opens one,
+/// the choice closes the other.
 fn fork() {
-    let mut r = Rig::new(Setup { world: true, craft: true, fixtures: paths(), ..Setup::default() });
+    let mut r = Rig::new(Setup { world: true, craft: true, options: vec!["exclusive_paths"], fixtures: paths(), ..Setup::default() });
     r.join(PLAYER);
     r.join(OTHER);
     r.tick(1);
@@ -391,7 +393,7 @@ fn one_door() {
 fn repath() {
     let setup = Setup {
         craft: true,
-        options: vec!["repath"],
+        options: vec!["repath", "exclusive_paths"],
         prelude: "tdp_overrides = { repath_cooldown = 100 }".into(),
         fixtures: paths(),
         ..Setup::default()
@@ -515,6 +517,63 @@ fn survival() {
     assert_eq!(r.said(), "Your hand passes through the door. The dead choose nothing.");
     assert_eq!(r.ask("m path"), "nil");
     println!("survival: ok");
+}
+
+/// Where the paths coexist (the default): the first node of a path asks, a
+/// path not pursued is dearer and fades as the lead grows, and nothing locks.
+fn pursuit() {
+    let mut r = Rig::new(Setup { craft: true, fixtures: paths(), ..Setup::default() });
+    r.join(PLAYER);
+    r.tick(1);
+    op(&r, PLAYER);
+    r.say("progress insight 2000");
+    r.say("progress grant shared.keystone");
+    r.action(PLAYER, &format!("{MOD}:research"));
+    let tree = r.last_dialog().unwrap().1;
+    assert!(tree.contains("The Attuned") && tree.contains("The Engineers") && tree.contains("Gears"), "both, whole: {tree}");
+
+    // The first step down a path asks first; "not yet" takes nothing.
+    r.press(PLAYER, "research", "node:magic.attune");
+    let question = "If you research this, you are pursuing The Attuned.";
+    assert!(r.last_dialog().unwrap().1.contains(question), "the question is asked");
+    r.press(PLAYER, "research", "pursue:no");
+    assert!(!r.last_dialog().unwrap().1.contains(question));
+    assert_eq!(r.ask("progress"), "Insight 2000. Path: none yet. Nodes known: 1.");
+    r.heard(PLAYER);
+    r.press(PLAYER, "research", "node:magic.attune");
+    r.press(PLAYER, "research", "pursue:yes");
+    assert!(r.heard(PLAYER).iter().any(|l| l == "You are pursuing The Attuned."), "now pursuing");
+    assert_eq!(r.ask("m path"), "magic");
+    assert_eq!(r.ask("m has shared.fork"), "true", "the Fork is passed by the first step");
+
+    // The other path: open, three tiers behind, so it costs 2.5 times and
+    // still shows up to its fourth tier.
+    assert_eq!(r.ask("m cost tech.steam"), "250");
+    assert_eq!(r.ask("m cost magic.focus"), "150", "your own path at its own price");
+    r.action(PLAYER, &format!("{MOD}:research"));
+    let tree = r.last_dialog().unwrap().1;
+    assert!(tree.contains("The Attuned (you pursue it)") && tree.contains("Gears"), "{tree}");
+    assert!(tree.contains("Steam (250 insight, dearer while you pursue The Attuned)"), "the price is on hover: {tree}");
+
+    // A tier further up your own path: dearer still, and the other fades to
+    // the tier it begins at.
+    assert_eq!(r.ask("m unlock magic.focus"), "true nil");
+    assert_eq!(r.ask("m cost tech.steam"), "300");
+    r.action(PLAYER, &format!("{MOD}:research"));
+    let tree = r.last_dialog().unwrap().1;
+    assert!(!tree.contains("Gears") && tree.contains("Steam"), "the other path fades, but its door stays: {tree}");
+
+    // Studying the other path anyway: asked too, paid at its price, and your
+    // own path is still the one you pursue.
+    r.heard(PLAYER);
+    r.press(PLAYER, "research", "node:tech.steam");
+    assert!(r.last_dialog().unwrap().1.contains("If you research this, you are pursuing The Engineers."));
+    r.press(PLAYER, "research", "pursue:yes");
+    assert!(r.heard(PLAYER).iter().any(|l| l == "You are studying The Engineers beside your own path."));
+    assert_eq!(r.ask("progress"), "Insight 1450. Path: The Attuned. Nodes known: 5.", "100, 150 and 300 spent");
+    assert_eq!(r.ask("m path"), "magic");
+    assert_eq!(r.ask("m has tech.steam"), "true", "nothing locks");
+    println!("pursuit: ok");
 }
 
 /// A ruler for the engine's own layout: text a little over half its size
