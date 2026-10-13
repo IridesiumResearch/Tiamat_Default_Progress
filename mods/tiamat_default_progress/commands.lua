@@ -67,10 +67,16 @@ local function command(player, rest)
     if word == "grant" then
         local node = N.node(arg)
         if not node or node.broken then return "no node " .. arg end
-        if node.path ~= "shared" and S.record(player).path ~= node.path then
+        if C.exclusive_paths and node.path ~= "shared" and S.record(player).path ~= node.path then
             return node.label .. " is " .. node.path .. "'s; take that path first"
         end
-        N.grant(player, arg, true)
+        -- Where paths coexist a grant is a step down the path as a purchase
+        -- is: the first one sets the pursuit, a lead passing moves it.
+        local before = N.pursuing(player)
+        local entering = node.path ~= "shared" and N.depth(player, node.path) == 0
+        if N.grant(player, arg, true) and not C.exclusive_paths and node.path ~= "shared" and tdp.fork then
+            tdp.fork.pursued(player, node.path, entering, before)
+        end
         return "Learned: " .. node.label
     elseif word == "insight" then
         local n = U.whole(tonumber(arg), 0, C.max_insight)

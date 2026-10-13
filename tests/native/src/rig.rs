@@ -395,6 +395,9 @@ impl uihost::Access for Dialogs {
         self.closed.lock().unwrap().push((player.to_owned(), form.to_owned()));
         true
     }
+    fn set_hover(&self, _: &str, _: Vec<(tiamat_core::MaterialId, String)>) -> bool {
+        true
+    }
 }
 
 #[derive(Default)]
@@ -1083,6 +1086,7 @@ impl Rig {
             mod_id: MOD.into(),
             form: format!("{MOD}:{form}"),
             event: proto::DialogEvent::Pressed { name: name.into(), click: proto::Press::Left },
+            dropped: None,
         });
         self.assert_healthy("a press");
     }

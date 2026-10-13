@@ -573,6 +573,11 @@ fn pursuit() {
     assert_eq!(r.ask("progress"), "Insight 1450. Path: The Attuned. Nodes known: 5.", "100, 150 and 300 spent");
     assert_eq!(r.ask("m path"), "magic");
     assert_eq!(r.ask("m has tech.steam"), "true", "nothing locks");
+
+    // An operator's grant follows the same rule: either path, nothing paid.
+    assert_eq!(r.ask("progress grant tech.gears"), "Learned: Gears");
+    assert_eq!(r.ask("m has tech.gears"), "true");
+    assert_eq!(r.ask("m path"), "magic", "level at two tiers each, the pursuit stays");
     println!("pursuit: ok");
 }
 
