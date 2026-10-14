@@ -8,7 +8,7 @@
 # until one does the Fork is a room the player can see into.
 id = "tiamat_default_progress"
 name = "Tiamat Default Progress"
-version = "0.1.0"
+version = "0.2.0"
 depends = ["core >=0.1"]
 # Loaded AFTER each of these when it is here, which is what the optional edge
 # buys, so `game.exports` finds them from the first line of init.lua:

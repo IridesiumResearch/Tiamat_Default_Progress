@@ -38,7 +38,7 @@ Built in the brief's order (§12):
 | 5 | The research table and the studies, through Craft's registry | **done** |
 | 6 | The Research tab (or dialog), discoveries, studies, the HUD | **done** |
 | 7 | The Fork: paths, the Keystone, doors, the lock, repath, modes (`0.1.0`) | **done** |
-| 8 | `shared_gates` wiring; the pacing bot and `docs/pacing.md` (`0.2.0`) | gates, the ledger, the model and the walking bot **done**; the tuning waits on a real session of Craft's loop |
+| 8 | `shared_gates` wiring; the pacing bot and `docs/pacing.md` (`0.2.0`) | **done**: the gates, the ledger, the model, the walking bot and sixteen playtests measured; `config.lua` stands as designed until a playtest reaches bronze and the research table |
 
 Today a player earns insight from the first time their feet reach each of
 the world's biomes and each depth band under the ground, from Craft's firsts (their first
@@ -76,7 +76,7 @@ mods/tiamat_default_progress/
   exports.lua       what other mods may call
   hud.lua           the client's HUD script: insight, and what just earned some
   textures/         placeholders, drawn by tools/make_textures.py
-tools/pacing/       the pacing bot (walk.lua) and its runner (run.py)
+tools/pacing/       the pacing bot (walk.lua), its runner (run.py), and the playtests' reader (ledgers.py)
 tests/native/       the mod in the engine's real VM, with stand-ins around it; the pacing model
 docs/               the brief, the exports, the pacing, and the asks of the engine and the siblings
 ```
@@ -102,6 +102,14 @@ and writes what exploring paid into `docs/pacing.md` (it needs the engine's
 
 ```sh
 python tools/pacing/run.py --minutes 30
+```
+
+What real play paid is read from the worlds the client has saved — every
+world keeps its players' ledgers — into `docs/pacing.md`, without opening
+them for writing:
+
+```sh
+python tools/pacing/ledgers.py
 ```
 
 The native check runs the mod through the engine's real VM with a fake

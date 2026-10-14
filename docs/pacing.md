@@ -27,6 +27,9 @@ three hours, and when each shared node came within reach.
   writes "Measured: walking" at the end of this file. Craft's loop
   wants blocks placed by numeric id, which a bot script cannot look up
   by name, so that half is a person's session for now.
+- **The playtests** are those sessions: every world keeps its players'
+  ledgers, and `python tools/pacing/ledgers.py` reads them out of the
+  client's saved worlds, read-only, into "Measured: playtests".
 
 ## The model
 
@@ -98,11 +101,53 @@ when it rewrites the tables above.
   exploration is meant to carry the shared tree, `biome_insight` (3) is
   the number to turn; that is the designer's call, and nothing has been
   turned.
-- **Nothing in `config.lua` has been changed on the model's say-so.** The
-  brief asks for the pacing to be measured, not guessed; the model is the
-  guess to measure against. After a playtest, `progress sources` (or the
-  server log's `pacing` lines) gives the real version of the first table.
+- **Measured, play opens the tree and stops short of the middle.**
+  Sixteen played worlds (the playtests table, 2026-09-29 to 2026-10-13)
+  earned 7 to 24 insight in an ordinary session, and the price of the
+  first nodes is 10 to 20, so the opening is in reach on the first
+  evening, as the brief means it to be. Where it came from agrees with
+  the bot: a biome or three by walking (3 to 18), and a steady few from
+  Life — each kind of creature hunted, a food, a death (2 to 8). The two
+  rows over a hundred are depth: every band to two thousand blocks in one
+  world, which is a flight or a test, not a climb. No world reached
+  Craft's loop past a fire and a torch, so the half of the tree that
+  bronze, the kiln and the research table pay for is still the model's
+  guess. Not one node was bought, though most sessions could have: worth
+  watching, since it may say the Research tab is not being found.
+- **`config.lua` stands as designed for `0.2.0`** (2026-10-14). What has
+  been measured — walking and the opening — agrees with it, and nothing
+  measured argues for turning a number; the middle of the climb has not
+  been played. The next playtest that reaches bronze and the research
+  table is the one to tune from: play it, then run
+  `python tools/pacing/ledgers.py` and read its row against the model.
 
+## Measured: playtests
+
+Written by `python tools/pacing/ledgers.py` on 2026-10-14: the ledger
+every played world keeps, read from the saves in `%APPDATA%/tiamat/worlds`, one row
+a player, oldest first. The date is when the world was last saved.
+No minutes: a world does not record how long it was played, so these
+say what a session reached, not how fast. `firecraft` is given by the
+first fire, never bought.
+
+| World | Saved | found_biomes | found_creatures | found_depths | found_food | found_making | found_stations | found_survival | Earned | Held | Nodes |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| new-world-4-7 | 2026-09-29 | 9 | 0 | 0 | 0 | 0 | 0 | 0 | 9 | 9 | — |
+| new-world-5-4 | 2026-09-30 | 9 | 2 | 0 | 0 | 0 | 0 | 5 | 16 | 16 | — |
+| new-world-27 | 2026-09-30 | 9 | 0 | 0 | 0 | 0 | 0 | 0 | 9 | 9 | — |
+| new-world-3-11 | 2026-09-30 | 3 | 0 | 0 | 0 | 0 | 0 | 0 | 3 | 3 | — |
+| new-world-4-8 | 2026-10-01 | 27 | 0 | 88 | 0 | 0 | 0 | 0 | 115 | 115 | — |
+| new-world-3-12 | 2026-10-01 | 15 | 0 | 88 | 0 | 0 | 0 | 0 | 103 | 103 | — |
+| new-world-4-9 | 2026-10-02 | 12 | 4 | 0 | 0 | 0 | 0 | 0 | 16 | 16 | — |
+| new-world-28 | 2026-10-05 | 12 | 4 | 0 | 1 | 0 | 4 | 0 | 21 | 21 | — |
+| new-world-2-16 | 2026-10-07 | 6 | 4 | 0 | 1 | 0 | 4 | 0 | 15 | 15 | — |
+| new-world-3-13 | 2026-10-07 | 9 | 2 | 0 | 0 | 0 | 4 | 0 | 15 | 15 | — |
+| new-world-29 | 2026-10-08 | 3 | 6 | 0 | 0 | 0 | 4 | 0 | 13 | 13 | — |
+| testies | 2026-10-08 | 6 | 2 | 0 | 0 | 0 | 0 | 0 | 8 | 8 | — |
+| new-world-30 | 2026-10-08 | 3 | 2 | 0 | 0 | 0 | 4 | 0 | 9 | 9 | — |
+| new-world-2-17 | 2026-10-08 | 3 | 0 | 0 | 0 | 0 | 4 | 0 | 7 | 7 | — |
+| new-world-31 | 2026-10-12 | 9 | 6 | 0 | 0 | 5 | 4 | 0 | 24 | 24 | `firecraft` |
+| new-world-2-18 | 2026-10-13 | 18 | 8 | 23 | 1 | 0 | 0 | 5 | 55 | 55 | — |
 ## Measured: walking
 
 Written by `python tools/pacing/run.py --minutes 30` on 2026-09-29: the pacing

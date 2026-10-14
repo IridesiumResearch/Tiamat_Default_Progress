@@ -198,7 +198,10 @@ fn main() {
          across a fresh world on a real server with the default mods, and\n  \
          writes \"Measured: walking\" at the end of this file. Craft's loop\n  \
          wants blocks placed by numeric id, which a bot script cannot look up\n  \
-         by name, so that half is a person's session for now.\n"
+         by name, so that half is a person's session for now.\n\
+         - **The playtests** are those sessions: every world keeps its players'\n  \
+         ledgers, and `python tools/pacing/ledgers.py` reads them out of the\n  \
+         client's saved worlds, read-only, into \"Measured: playtests\".\n"
     );
     let _ = writeln!(out, "## The model\n");
     let _ = write!(out, "| Minute |");
