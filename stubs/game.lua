@@ -34,6 +34,21 @@
 --
 -- This file describes what exists. `scripts/check-stubs.sh` fails CI if the
 -- engine registers something this file does not document.
+--
+-- =========================================================================
+-- API version: 1.0
+-- =========================================================================
+--
+-- The version of the API this file describes, which `game.api_version`
+-- reports at run time; CI fails if the two differ. `1.0` is the API as frozen
+-- at engine 0.5.0. Within a major version nothing a mod can call goes away or
+-- changes its meaning without a deprecation first: a
+-- `---@deprecated Since API 1.x, goes in 1.y: use ...` line on the stub (your
+-- editor strikes it through), an entry in AGENTS.md's "What changed" list,
+-- and at least one minor release in which it still works as it did.
+-- Additions raise the minor. Re-vendor this file from the engine's `main`
+-- when you move to a new engine release: what it says is what that engine
+-- does.
 
 ---@meta
 
@@ -238,6 +253,9 @@ function ChunkBuffer:fill_layers(depth, code, layers) end
 ---buf:fill_cover(allium, { cells = 6, take = rare })   -- two blocks tall
 ---```
 ---@param material integer
+---**A passable cell is not ground** (2026-10-12). A run stands only on a cell
+---whose material collides, so an earlier call's grass, flowers or plants —
+---every one of them `passable` — are never grown on, and never written over.
 ---@param options table? `{ cells = 1..9, take = Tiamat.Density }`
 function ChunkBuffer:fill_cover(material, options) end
 
@@ -442,7 +460,7 @@ function Stream:next_bool() end
 ---@field id string Required. Namespaced with your mod id automatically.
 ---@field name string? Display name.
 ---@field description string? One-line description.
----@field hardness number? Seconds to break with a bare hand. Default 0.75. Must not be negative. One SUB-NODE of it costs a thirteen-and-a-half-th of this, so chiselling a block out cell by cell takes twice as long as smashing it whole.
+---@field hardness number? Seconds to break a FULL block with a bare hand. Default 0.75. Must not be negative. A block brush pays for what is there: a block a third full takes a third of this (Sub-Node Contract §7.7). One SUB-NODE of it costs a thirteen-and-a-half-th of this whatever the block holds, so chiselling a block out cell by cell takes twice as long as smashing it whole.
 ---@field dominance number? How strongly this material imposes its hardness on a block it is only part of. Default 1.0. Must be positive. See below.
 ---@field drops table<string, integer>? Overrides what breaking it yields: block id to UNITS PER FULL BLOCK (27 to a block); a dig that takes part of a block pays that share, as the block comes apart. Omit for the ordinary rule — the block drops itself, 27 units whole or one per occupied sub-node. Bare ids are namespaced with your mod id; a namespaced id may be ANY mod's block (a drop names a block, it does not register one). A name nobody registered is logged and left out. `{}` drops nothing.
 ---@field tags string[]? Arbitrary tags for other mods to match on.
@@ -457,12 +475,14 @@ function Stream:next_bool() end
 ---@field light_falloff integer? How many levels of light a block of this material takes out of what passes through it, 0..15. Default 0, which is exactly what every block did before this existed. **For foliage that shades**: leaves are `cutout`, and a cutout block passes light the way glass does, so a canopy over a forest floor left it as bright as a meadow. Two levels a block gives a rainforest floor about 6 of 15 under three blocks of canopy. Daylight's free fall straight down ends at the first dimming block, so everything below the canopy costs the ordinary level a block as well — which is what makes a thick canopy dark beneath and a thin one dappled (Sub-Node Contract §8.2). Whole blocks of one material only, like `transparent`.
 ---@field washes_away boolean? Whether fluid running into this block sweeps it away: grass in a flood, a reed in a river. The block's cells are cleared as a dig would clear them, and **nothing is dropped** — what a washed plant leaves behind is yours to decide, from `register_on_fluid_flow`. Only a block whose occupied cells are ALL this material is cleared, so a fern sharing a block with a wall cannot take the wall with it. Pair it with `passable`: a flood runs THROUGH a passable plant, which is the case your mod cannot otherwise see, because `on_fluid_flow` reports the flows that were blocked (Sub-Node Contract §4.3).
 ---@field sway boolean? Whether the top of it moves in a fake wind: grass, leaves, a banner. **Presentation only** — the world does not know it is moving, so collision, lighting and the server's idea of where anything is are all untouched. The mesher marks the TOP EDGE of each face and the shader bends only those, so a plant bends from base to tip rather than sliding, and its base stays planted. The motion is smooth noise over world position and time, so a field leans in gusts rather than each plant buzzing on its own (Sub-Node Contract §8.3).
----@field billboard boolean|"cross"? Whether its cells are drawn as SPRITES rather than as geometry: grass, ferns, flowers. `true` is one card that turns to face the camera; `"cross"` is two FIXED cards on the diagonals of the run's column — the crossed X the classic voxel games draw, which reads as a plant and holds still as the player walks round it. **This is what a sprite card is here** — the engine has no diagonal geometry, and a cell drawn as a cube shows a NINTH of its texture per face (a texture repeats once per block), so grass built from cells reads as little floating boxes. A run of cells in a column is ONE sprite as tall as the run: one cell is a third of a yard, three is a yard. It turns about the vertical axis only, so it never lies over when you look down. The cells stay where they are for collision, light, fluid and the dig ray — only the drawing changes (Sub-Node Contract §8.4). A billboard may not also declare `transparent` or `cutout` — those are rules about a cell's cube faces and a sprite has none; the pair is refused.
+---@field billboard boolean|"cross"? Whether its cells are drawn as SPRITES rather than as geometry: grass, ferns, flowers. `true` is one card that turns to face the camera; `"cross"` is two FIXED cards on the diagonals of the run's column — the crossed X the classic voxel games draw, which reads as a plant and holds still as the player walks round it. **This is what a sprite card is here** — the engine has no diagonal geometry, and a cell drawn as a cube shows a NINTH of its texture per face (a texture repeats once per block), so grass built from cells reads as little floating boxes. A run of cells in a column is ONE sprite as tall as the run: one cell is a third of a yard, three is a yard. It turns about the vertical axis only, so it never lies over when you look down. The cells stay where they are for collision, light, fluid and the dig ray — only the drawing changes (Sub-Node Contract §8.4). A billboard may not also declare `transparent` or `cutout` — those are rules about a cell's cube faces and a sprite has none; the pair is refused. A card is neither ground nor in the way of a placement: a block placed against it lands where it is, and the cards there are gone (Sub-Node Contract §7.6 — nothing is built on grass).
 ---@field tint table? How this block's colour varies across the world: `{ strength = 0.15, scale = 32, low = {0.9, 1.0, 0.85}, high = {1.0, 0.95, 1.0} }`. **This is what stops ground reading as a repeating texture.** The client multiplies the texture by a colour sampled from one smooth field of world position — the same field for every material, so neighbouring materials vary together rather than each drifting on its own. `strength` (0..1) moves the TONE and is the whole of what most mods want: brightness variation alone breaks up the repeat. `low` and `high` are optional RGB multipliers at the two ends of the same field, for a hue shift — grass greener in one place than another — and default to no shift at all. `scale` is how many blocks one period spans, tens rather than ones: a period near a block makes noise rather than ground. Presentation only — nothing in the simulation reads it, and it is not in any determinism hash.
 ---@field absorbs { rate: integer, becomes: string?, fluid: string? }? Ground that drinks. `rate` is how many of the block's 27 cells it takes out of fluid touching it, per fluid tick, 1..=27. `becomes` is the block it turns into once it has taken them — a bare name is one of your own, and a namespaced one may be another mod's (`"tiamat_weather:damp_dirt"`), resolved when every mod has registered, so a world running without that mod has a chain that ends here rather than a mod that failed to load. Omit it for ground that drinks for ever without changing, which is a drain rather than a sponge. `fluid` names the ONE fluid it drinks (`"core_milk:milk"`, or a bare name for one of your own); omit it for ground that drinks whatever touches it. Named, it is what lets rain-wet dirt exist beside a river: the dirt that soaks rainwater does not drain the river it is the bed of. A fluid nobody registered is one nothing drinks. **Saturation is a chain of materials, not engine state** (Sub-Node Contract §4.3): `dirt` → `damp_dirt` → `saturated_dirt`, and the chain ends where a block stops naming a successor. A block of two or more materials never absorbs, because there is no way to turn one material inside a mix into its successor without per-cell saturation state.
----@field whole boolean? Whether a block of it is ONE PIECE (Sub-Node Contract §7.5): any tool digs the block, not the cell — a chisel included — in the block's own `hardness`; it comes off in one edit, never half standing; it pays a whole block's units (27 of itself, or `drops` in full) however many cells its `shape` has; placing it writes the air cells of its shape for 27 units whatever brush is held — a block under three quarters full is not ground, so placed against its top the thing goes INTO that block and stands on the first full block beneath, its model clipping through the ground cells that remain (§7.6); nothing is ever written into its block afterwards — not a chisel's cell, not a masked `set_block`, not a merge — and dug it comes up alone, the ground staying. Implied by `model`. The client outlines its cells under the aim.
+---@field whole boolean? Whether a block of it is ONE PIECE (Sub-Node Contract §7.5): any tool digs the block, not the cell — a chisel included — in the block's own `hardness`; it comes off in one edit, never half standing; it pays a whole block's units (27 of itself, or `drops` in full) however many cells its `shape` has; placing it writes its shape, whole, for 27 units whatever brush is held — on a block with any node in its top layer it goes in the block above; on a partial block with NO top node, that block's remains are swept away (destroyed) and it is laid whole at the bottom, on the block beneath (§7.6); by a side face it takes the air cells of its shape and is refused with "this is not flat ground" when there are none; nothing is written into its block afterwards — not a chisel's cell, not a masked `set_block`, not a merge — except a `set_block` of a whole block, which swaps it in place and keeps the ground (a fire lit, a torch burnt out); dug it comes up alone, the ground staying. Implied by `model`. The client outlines its cells under the aim.
 ---@field shape string[]? Which of the 27 cells a placed block of it occupies: three strings, the BOTTOM layer first, nine cells each — `#` occupied, `.` empty — in three rows of three, a row being one z (0, 1, 2 in turn) read x = 0, 1, 2 left to right; whitespace is ignored, so `"### ### ###"` is a layer. Default: all 27. Needs `whole = true` or a `model`: a registered shape a chisel could take apart would be a cut, and a cut is carried (§9.1), not registered. Collision, light, fluid and the aim see exactly these cells; the shape is written as declared, never turned to face the player.
----@field model string? A model id from `game.register_model` — a bare name is your own, `"their_mod:thing"` another mod's — that the client draws IN PLACE OF the block's cells (Sub-Node Contract §8.6): a campfire, a brazier, an anvil. Makes the block `whole`. The cells still drive collision, light, fluid and the aim (give it a `shape`); the model is what the player sees, and the two need not agree, as a creature's collider and its mesh need not. In cells, like a creature's model: three units to the block, origin at the bottom centre, +Z forward, `register_model`'s `scale` applied; lit as a creature is, by the brightest light at the block and its six neighbours. `transparent`, `cutout`, `sway` and `billboard` are refused with it — a model has no faces for them. A model nobody registered is a server-side error and the block draws nothing. `textures.all` is still what the inventory shows for it.
+---@field sweeps boolean? For a `whole` block: whether, set down on a partial block with no node in its top layer, it sweeps that block's remains away (Sub-Node Contract §7.6). Default `true` — a campfire, a station, which want level ground. `false` makes it stand among the block's cells instead, taking the air cells of its `shape` with its model clipping through the ground, as it does placed by a side face — a torch, a sign; "this is not flat ground" when no cell of its shape is air there. Refused on a block that is not `whole`.
+---@field flicker { depth: number?, rate: number? }? How its light breathes, for a block with `light_emit`: a campfire. `depth` 0..1 is how far the light dips (default 0.3), `rate` 1..30 is steps a second (default 8). Presentation only: the client dims the block light near it with smooth noise and dims the block's own model in step; the light the server propagates is unchanged, and `flicker` without `light_emit` is refused.
+---@field model string? A model id from `game.register_model` — a bare name is your own, `"their_mod:thing"` another mod's — that the client draws IN PLACE OF the block's cells (Sub-Node Contract §8.6): a campfire, a brazier, an anvil. Makes the block `whole`. The cells still drive collision, light, fluid and the aim (give it a `shape`); the model is what the player sees, and the two need not agree, as a creature's collider and its mesh need not. In cells, like a creature's model: three units to the block, origin at the bottom centre, +Z forward, `register_model`'s `scale` applied; lit as a creature is, by the brightest light at the block and its six neighbours. `transparent`, `cutout`, `sway` and `billboard` are refused with it — a model has no faces for them. A model nobody registered is a server-side error and the block draws nothing. `textures.all` is what a slot shows for it until the model and its skin have arrived; then the slot shows the model, from the angle a cube is shown at.
 
 ---How `dominance` decides a mixed block's hardness.
 ---
@@ -595,6 +615,7 @@ function Stream:next_bool() end
 ---@field ITEMS_PER_STACK integer How many of a thing one inventory slot holds. 90. Anything over it spills into the next slot rather than being refused, so this is what a recipe means by "a stack" and never a limit on what a player may own.
 ---@field AIR integer The numeric id of air. Always 0.
 ---@field mod_id string Your mod's id, and your registration namespace.
+---@field api_version string The version of the mod API this engine speaks, `"major.minor"`; `"1.0"` is the API frozen at engine 0.5.0. The header of this file names the version it describes, and the engine's CI keeps the two equal. A mod written against a later minor may refuse an older engine here (`error` during registration disables the mod with a reason in the log); one written against an earlier minor needs nothing. The rule behind the number is in AGENTS.md, "The API's version".
 ---@field world_seed integer? The world's seed — the same number a generator's `pos.seed` carries — for sampling a density or a map outside a generator (`density:at(x, y, z, game.world_seed)` to aim a spawn at the ground). `nil` during registration, which runs before the world opens; set in every VM, the generation workers' included, by the time anything else runs.
 game = {}
 
@@ -1042,6 +1063,12 @@ function game.register_view(spec) end
 ---    texture = "items/sword.png",
 ---}
 ---```
+---
+---**An item moves in whole items.** It has no cells, so a part of one means
+---nothing: in every inventory the engine holds, a right-click halves a stack of
+---it in whole items (the larger half to the hand), a right-click with a stack
+---held puts down one whole item, and `game.give`/`game.take` round to whole
+---items — 27 units each, exactly as 27 units of a block are one block.
 ---@param spec { id: string, name?: string, texture?: string, description?: string }
 ---@return integer material_id
 function game.register_item(spec) end
@@ -1744,7 +1771,10 @@ function game.inventory(player, view) end
 ---and brick.
 ---
 ---Returns false for a player who is not connected, or for a quantity of zero.
----An inventory never refuses for lack of room — it grows.
+---An inventory never refuses for lack of room — it grows. **An item
+---(`register_item`) goes in whole**: of forty units of meat one meat goes in
+---and thirteen come back in `left`, and `slot` refuses a part of an item
+---outright.
 ---@param player string A player UUID in hex.
 ---`slot` names ONE slot of the view, one-based, and then the stack goes in whole
 ---or not at all — an empty slot takes it, one holding the same thing with room
@@ -1781,6 +1811,28 @@ function game.give(player, spec) end
 ---```
 ---@param slots integer 1 to 256.
 function game.set_main_slots(slots) end
+
+---Makes a plain right-click deal in whole blocks. Registration window only,
+---and one grain for the server: a second mod naming a different one is an
+---error at load.
+---
+---Without this a right-click on a stack of loose material takes half of it
+---BY THE UNIT and a right-click with a stack held puts down one unit. With
+---`game.set_slot_grain(27)` the same clicks move whole blocks: a hundred
+---units of stone (3 blocks and 19 nodes) right-clicked takes two blocks to
+---the hand and leaves a block and the nineteen; a right-click with a stack
+---held puts down one block, or what is held when that is less. A cut of one
+---material then moves in whole cuts. **Shift with the right-click is the unit
+---gesture** — half by the unit, one unit down — so nothing a player could do
+---before is lost. Items and cuts of several materials move in whole items
+---whatever this says. `units` is the grain, 1 to 27; 27 is what a block game
+---wants.
+---
+---```lua
+---game.set_slot_grain(27)
+---```
+---@param units integer 1 to 27.
+function game.set_slot_grain(units) end
 
 ---What a player is holding: the stack in the hotbar slot they have selected.
 ---
@@ -1859,7 +1911,8 @@ function game.heading(dx, dz) end
 ---the block, whose `material` and missing mask look like loose material's. A
 ---stack table `game.inventory` reported is a spec for the same stack. A cut of
 ---several is taken in whole items: asking for part of one takes the whole
----ones the request covers.
+---ones the request covers. So is an item (`register_item`): ten units of meat
+---is no meat taken, forty is one.
 ---@param player string A player UUID in hex.
 ---`slot` names ONE slot of the view, one-based, to take from that slot alone.
 ---@param spec { material: string|integer?, units: integer?, count: integer?, shape: integer?, cells: (string|integer)[]?, detail: string?, view: string?, slot: integer? }
@@ -2001,6 +2054,35 @@ function game.update_dialog(spec) end
 ---@return boolean closed
 function game.close_dialog(spec) end
 
+---A line of yours under a stack's name, per player, wherever they hover a
+---stack of that material: an `item_slot`, an `item_grid`, any screen's.
+---
+---**Latest state, keyed by material.** The whole table replaces the last one
+---each call, so send it when what the player knows changes — what they have
+---researched, what they have made — and not per click; keyed by material
+---rather than by slot, it follows items as they move. Each key is a block id
+---(`"mod:name"`, or a bare name of your own) or the numeric material a stack
+---reports; each value is one line of at most 256 bytes, the tooltip's cap.
+---At most 256 lines. `nil` clears it.
+---
+---What to say is yours. The reference use is Craft's "Makes: Planks
+---(workbench, new), Sticks (by hand), …" — every recipe the material goes
+---into that the player may make, the ones they have never made first.
+---
+---Returns whether the player was there to be told.
+---
+---```lua
+---game.set_hover(uuid, {
+---    ["core:oak_log"] = "Makes: Planks (workbench, new), Sticks (by hand)",
+---    [stone] = "Makes: Cobble walls (by hand)",
+---})
+---game.set_hover(uuid, nil) -- nothing under any name
+---```
+---@param player string A player UUID in hex.
+---@param lines table<string|integer, string>? Material to line, or nil to clear.
+---@return boolean told
+function game.set_hover(player, lines) end
+
 ---# The shape editor
 ---
 ---`{ type = "shape_editor", shape = <mask>, material = <id> }` draws a block as
@@ -2047,14 +2129,25 @@ function game.close_dialog(spec) end
 ---  - `"toggled"` — `name`, `checked`
 ---  - `"slid"` — `name`, `value`
 ---  - `"chose"` — `name`, `index` (one-based)
----  - `"clicked"` — `view`, `index` (one-based), `click` ("left", "right", "shift_left")
+---  - `"clicked"` — `view`, `index` (one-based), `click` ("left", "right",
+---    "shift_left", "shift_right")
 ---  - `"chiselled"` — `name`, `shape` (the whole 27-bit mask), and `cells` (27
 ---    numeric ids, `0` for empty) from an editor of several materials
 ---  - `"closed"` — nothing else
+---  - `"dropped"` — `click` ("left", "right", "shift_right") and `stack`: the
+---    player clicked outside every open screen with a stack on the cursor,
+---    and this much of it has LEFT them — all of it on a left, one block (one
+---    whole item) on a right, one unit on a shift-right. `stack` is as
+---    `game.inventory` reports one (`material`, `units`, `shape`, `cells`,
+---    `detail`). What it becomes is yours — an item entity thrown along
+---    `facing`, a sale, nothing. **Return `true` to say you took it.** Return
+---    nothing and the engine puts it back on the cursor, so a screen that
+---    never thought about drops loses the player nothing.
 ---
 ---**Every one is a REQUEST, never a result.** A slot click says what the player
 ---did with the mouse; whether any item moves is the server's decision, taken
 ---against its own inventory. A client saying "I moved this" does not make it so.
+---A `"dropped"` is the one event with an answer the engine reads: `true`.
 ---
 ---**A button's `click` is which press it had**, and what each means is yours:
 ---ten for a click, one for a right-click, a stackful for a double. It is always
@@ -2063,7 +2156,7 @@ function game.close_dialog(spec) end
 ---coming without making every button wait to answer. So on `"double"`, do what
 ---is left of the larger thing rather than the whole of it again. A right-click
 ---presses a button; a mod that never reads `click` treats it as a press.
----@param callback fun(event: { player: string, form: string, kind: string, name: string?, text: string?, checked: boolean?, value: integer?, index: integer?, view: string?, click: string?, shape: integer?, cells: integer[]? })
+---@param callback fun(event: { player: string, form: string, kind: string, name: string?, text: string?, checked: boolean?, value: integer?, index: integer?, view: string?, click: string?, shape: integer?, cells: integer[]?, stack: table? }): boolean?
 function game.register_on_dialog_event(callback) end
 
 ---Registers a sound. Registration window only.
@@ -2432,10 +2525,25 @@ function game.is_operator(player) end
 ---  While the player rides a mount the MOUNT's physics govern and this does not
 ---  apply to the pair. Mobs and other entities are untouched; it is yours to
 ---  say per player (gravity plating, cavorite soles, a low-gravity body).
+---- `crawl` (default `false`) — Life ask 23: this player lies down to go
+---  under something too low to stand in. Sneaking at a one-block gap, or a
+---  ceiling closing over them, takes the low box (2.4 cells tall, the eye 2.0
+---  up, the sneak's pace, no jump); they stand where there is room, and never
+---  into a ceiling. The client predicts the same posture, so nobody
+---  rubber-bands at the mouth of a tunnel. The figure is tagged `CRAWL` (6),
+---  a clip named `crawl` on a model (the engine's humanoid has none and stands
+---  idle); `game.entity(body).crawling` reads it. Off, a one-block gap stops
+---  a body as it always did.
 ---
 ---The client is told and predicts with the same numbers, so a slowed or light
 ---player does not rubber-band. An unknown field is an error, so a typo is not a
 ---setting you think you made. Forgotten when the player leaves.
+---
+---**`operator_fly`** (Life ask 22): whether the server's operator list may
+---grant this player flight over your grant. It may, unless you say `false`;
+---then `fly` is the whole answer for this player, operator or not. A survival
+---world sends `operator_fly = false` to everybody and `fly = true` to the one
+---who has taken their powers in front of the server.
 ---
 ---Returns `false` for a player who is not here.
 ---
@@ -2449,7 +2557,7 @@ function game.is_operator(player) end
 ---})
 ---```
 ---@param player string The player's UUID, in hex.
----@param abilities { fly: boolean?, speed: number?, sprint: boolean?, wind_sky: boolean?, gravity: number? }|nil
+---@param abilities { fly: boolean?, operator_fly: boolean?, speed: number?, sprint: boolean?, wind_sky: boolean?, gravity: number?, crawl: boolean? }|nil
 ---@return boolean told
 function game.set_player_abilities(player, abilities) end
 
@@ -2618,7 +2726,7 @@ function game.register_hud_script(file) end
 ---a texture, so a client that already has it downloads nothing.
 ---
 ---**Clips are matched to the engine's animation tags by NAME**: `idle`,
----`walk`, `run`, `swing`, `swim`, `sneak`. A tag with no clip falls back to
+---`walk`, `run`, `swing`, `swim`, `sneak`, `crawl`. A tag with no clip falls back to
 ---`idle`; a model with no clips at all is drawn rigid, which is right for a
 ---crate. `scale` multiplies the model's own size, for art exported at one
 ---unit to the yard rather than to the engine's cell.
@@ -3373,6 +3481,15 @@ function game.set_fluid(position, spec) end
 ---the same cells costs; a shape of many cells across varied ground is not free.
 ---Without a mask there are no cells to keep, so `merge` has nothing to answer
 ---and is ignored.
+---
+---**A `whole` block (Sub-Node Contract §7.5) written where a whole block
+---stands is swapped in place.** `set_block(pos, "my_mod:campfire_lit")` on
+---the block an unlit campfire stands in replaces the campfire and nothing
+---else: the new one's shape takes the cells the old one leaves and the air,
+---and the ground sharing the block — the thin floor it was set into (§7.6) —
+---stays. A fire lit, a fire gone out, a torch burnt out, keep their floor.
+---Where no whole block stands, the write replaces the block as ever; a mask
+---on a whole block is refused, since it is written as its own shape.
 ---@param position { x: integer, y: integer, z: integer }
 ---@param block string A registered block id, qualified.
 ---@param occupancy integer? Which of the 27 cells to fill. Omit for the whole block.
@@ -3400,6 +3517,7 @@ function game.set_block(position, block, occupancy, options) end
 ---@field material integer What it would be made of.
 ---@field occupancy integer Bitmask of which of the block's 27 cells would be filled.
 ---@field units integer How many units it would cost, which is the number of set bits in `occupancy`.
+---@field swept boolean Whether the placement SWEEPS the block (Sub-Node Contract §7.6): what the block holds that it does not write over is destroyed — a `whole` block laid on a partial block with no node in its top layer, or the grass cards in a block. The rule that decides what a bare hand may clear is a mod's: refuse here with your own words ("Level this ground") when the block holds what the hand could not dig. `game.get_block` on `x, y, z` still reads the block as it stands.
 ---@field cells integer[]|nil For a cut of several materials, each cell's material as it would land — turned to face the player as the placement turns it — 27 numeric ids with `0` for empty; `material` is then the lowest of them. Absent for anything else.
 
 ---The place control landing on a block with nothing to place.
@@ -4086,7 +4204,8 @@ function game.density(spec) end
 ---point is on and how far — a coastline, land where it is positive and the
 ---cliff rising over its first few blocks.
 
----A structure built once, from a list of blocks, for `buf:scatter` to stamp.
+---A structure built once, from a list of blocks, for `buf:scatter` to stamp —
+---or `game.stamp_schematic`, at run time.
 ---
 ---Each block is `{dx, dy, dz, material, mask}`: an offset from the root in
 ---blocks, a numeric material id, and a 27-bit mask of the cells written
@@ -4141,7 +4260,51 @@ function game.schematic(blocks) end
 ---@return Tiamat.Schematic
 function game.schematic_shapes(shapes) end
 
----A structure for `buf:scatter`. See `game.schematic`.
+---Writes a schematic into the running world with its root at `pos`, turned,
+---paced across ticks — the structure a generator scatters, built once at load,
+---stamped by an event long after the ground was made: a wreck at the end of a
+---rainbow, a ruin a quest uncovers.
+---
+---**Written as `buf:scatter` writes it.** A block whose mask is whole replaces
+---the block there (air clears it); a partial mask sets the cells it names and
+---keeps every other cell the block held — a merge write, so a hull's keel sits
+---IN the ground rather than in a footprint of air. Air in a partial mask
+---carves those cells. Blocks go in the order you listed them, so a later block
+---lands over an earlier one at the same place. A `whole` material is written
+---as its own shape with a whole mask; a partial mask of one writes nothing
+---(Sub-Node Contract §7.5).
+---
+---**`turn` is 0 to 3 quarter turns about the vertical through the root**,
+---default 0. One turn takes `+z` to `+x` and `+x` to `-z` — the way a shape
+---placed facing east turns — so an offset `(dx, dz)` becomes `(dz, -dx)`, and
+---every mask turns with its block: cell `(x, y, z)` becomes `(z, y, 2 - x)`.
+---Four turns are none.
+---
+---`domain` is the space, defaulting to `pos.domain` and then the overworld.
+---
+---Returns whether the stamp was ACCEPTED, as `game.plans.stamp` does: the
+---engine paces it with the plans, a few hundred blocks a tick, so a structure
+---of a few hundred blocks lands within a few ticks and one of thousands builds
+---itself over a second or two. `false` when there is no world yet (worldgen,
+---registration) or too many stamps are already waiting — wait and ask again.
+---
+---A mistake is an error naming the field: a `turn` that is not 0 to 3, a
+---`domain` that names no domain, an option it does not know, a `pos` that is
+---not whole blocks, or a `schematic` that did not come from `game.schematic` or
+---`game.schematic_shapes`.
+---
+---```lua
+---local WRECK = game.schematic(blocks)          -- once, at load
+---game.stamp_schematic(WRECK, { x = 120, y = 64, z = -40 }, { turn = rng:below(4) })
+---```
+---@param schematic Tiamat.Schematic From `game.schematic` or `game.schematic_shapes`.
+---@param pos { x: integer, y: integer, z: integer, domain: string? } Where the root block goes.
+---@param options { domain: string?, turn: integer? }?
+---@return boolean accepted
+function game.stamp_schematic(schematic, pos, options) end
+
+---A structure for `buf:scatter` and `game.stamp_schematic`. See
+---`game.schematic`.
 ---@class Tiamat.Schematic
 local Schematic = {}
 
@@ -4432,7 +4595,7 @@ function game.transfer_entity(id, domain, position) end
 ---a fall of four hundred land at exactly the same number, and a body dropping
 ---through water is slowed by the water before it touches down. Walking down a
 ---step raises nothing: a body that never left the ground never fell.
----@return { pos: { x: number, y: number, z: number }, yaw: number, pitch: number, facing: { x: number, y: number, z: number }, velocity: { x: number, y: number, z: number }, on_ground: boolean, submerged: number, fell: number, source: string, model: string|nil, item: table|nil, anim: integer, health: integer|nil, max_health: integer|nil, owner: string|nil, nametag: string|nil, nametag_player: string|nil }|nil
+---@return { pos: { x: number, y: number, z: number }, yaw: number, pitch: number, facing: { x: number, y: number, z: number }, velocity: { x: number, y: number, z: number }, on_ground: boolean, crawling: boolean, submerged: number, fell: number, source: string, model: string|nil, item: table|nil, anim: integer, health: integer|nil, max_health: integer|nil, owner: string|nil, nametag: string|nil, nametag_player: string|nil, tint: { r: number, g: number, b: number } }|nil
 function game.entity(id) end
 
 ---Changes an entity. Returns whether anything changed.
@@ -4461,7 +4624,7 @@ function game.entity(id) end
 ---})
 ---```
 ---@param id integer
----@param spec { pos?: { x: number, y: number, z: number }, velocity?: { x: number, y: number, z: number }, yaw?: number, pitch?: number, health?: integer, speed?: number, anim?: integer, drive?: { walk?: { x: number, z: number }, jump?: boolean, gait?: "walk"|"sprint"|"sneak" } }
+---@param spec { pos?: { x: number, y: number, z: number }, velocity?: { x: number, y: number, z: number }, yaw?: number, pitch?: number, health?: integer, speed?: number, anim?: integer, drive?: { walk?: { x: number, z: number }, jump?: boolean, gait?: "walk"|"sprint"|"sneak" }, tint?: { r: number, g: number, b: number }|false, tint_ticks?: integer } `tint` colours the figure, a multiplier on its skin in 0..=1 per channel, until changed (`false` clears it); with `tint_ticks` it is a FLASH over the tint underneath, eased back out over that many ticks by the engine, with no further messages — the hit flash, `{ tint = { r = 1, g = 0.55, b = 0.55 }, tint_ticks = 6 }`. Presentation only, and not persisted: a mod keeping a state across a save sets its colour again.
 ---@return boolean changed
 function game.set_entity(id, spec) end
 
